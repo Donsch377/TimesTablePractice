@@ -1,4 +1,5 @@
 const TOTAL_SECONDS = 10;
+const CHECKPOINT_SIZE = 10;
 const FACTORS = Array.from({ length: 12 }, (_, index) => index + 1);
 
 const board = document.querySelector("#table-board");
@@ -21,10 +22,13 @@ let problems = [];
 let completed = new Set();
 let currentProblem = null;
 let streak = 0;
+let highScore = 0;
 let timerId = null;
 let nextPromptId = null;
 let confettiId = null;
 let confettiPieces = [];
+let isCheckpointPaused = false;
+let isRunning = false;
 
 function problemKey(left, right) {
   return `${left}x${right}`;
@@ -74,13 +78,19 @@ function startGame() {
   victory.classList.remove("show");
   victory.setAttribute("aria-hidden", "true");
 
+  if (isCheckpointPaused) {
+    continueFromCheckpoint();
+    return;
+  }
+
   if (completed.size === problems.length) {
     resetProgress();
   }
 
   startButton.textContent = "Restart";
-  answerInput.disabled = false;
+  answerInput.readOnly = false;
   submitButton.disabled = false;
+  isRunning = true;
   feedback.className = "feedback";
   nextProblem();
 }
@@ -91,13 +101,16 @@ function resetProgress(message = "Board reset. Start again.") {
   completed = new Set();
   currentProblem = null;
   streak = 0;
+  isRunning = false;
+  isCheckpointPaused = false;
   updateStats();
   updateBoard();
   question.textContent = "Ready?";
   feedback.className = "feedback";
   feedback.textContent = message;
   answerInput.value = "";
-  answerInput.disabled = true;
+  answerInput.readOnly = false;
+  answerInput.placeholder = "Click to start";
   submitButton.disabled = true;
   startButton.textContent = "Start";
   timerFill.classList.remove("running");
@@ -116,7 +129,8 @@ function nextProblem() {
   currentProblem = remaining[Math.floor(Math.random() * remaining.length)];
   question.textContent = `${currentProblem.left} x ${currentProblem.right}`;
   answerInput.value = "";
-  answerInput.disabled = false;
+  answerInput.readOnly = false;
+  answerInput.placeholder = "Type answer";
   submitButton.disabled = false;
   answerInput.focus();
   feedback.className = "feedback";
@@ -153,6 +167,16 @@ function clearPendingNext() {
 function handleSubmit(event) {
   event.preventDefault();
 
+  if (isCheckpointPaused) {
+    continueFromCheckpoint();
+    return;
+  }
+
+  if (!isRunning) {
+    startGame();
+    return;
+  }
+
   if (!currentProblem) {
     return;
   }
@@ -162,12 +186,19 @@ function handleSubmit(event) {
     clearTimer();
     completed.add(currentProblem.key);
     streak += 1;
+    highScore = Math.max(highScore, streak);
     updateStats();
     updateBoard();
     currentProblem = null;
-    answerInput.disabled = true;
+    answerInput.readOnly = true;
     submitButton.disabled = true;
     timerFill.classList.remove("running");
+
+    if (completed.size % CHECKPOINT_SIZE === 0 && completed.size < problems.length) {
+      pauseForCheckpoint();
+      return;
+    }
+
     feedback.className = "feedback correct";
     feedback.textContent = "Correct.";
     nextPromptId = window.setTimeout(() => {
@@ -189,9 +220,37 @@ function failBoard(message) {
   feedback.className = "feedback wrong";
 }
 
+function pauseForCheckpoint() {
+  isRunning = false;
+  isCheckpointPaused = true;
+  feedback.className = "feedback correct";
+  feedback.textContent = `Checkpoint ${completed.size}. Time stopped.`;
+  question.textContent = "Checkpoint";
+  startButton.textContent = "Continue";
+  answerInput.value = "";
+  answerInput.placeholder = "Paused";
+  timerFill.style.transform = "scaleX(0)";
+}
+
+function continueFromCheckpoint() {
+  isCheckpointPaused = false;
+  isRunning = true;
+  startButton.textContent = "Restart";
+  answerInput.readOnly = false;
+  submitButton.disabled = false;
+  nextProblem();
+}
+
+function handleStartButton() {
+  if (isRunning && !isCheckpointPaused) {
+    resetProgress("New board ready.");
+  }
+  startGame();
+}
+
 function updateStats() {
   completedCount.textContent = completed.size;
-  streakCount.textContent = streak;
+  streakCount.textContent = highScore;
 }
 
 function updateBoard() {
@@ -206,7 +265,9 @@ function updateBoard() {
 function completeBoard() {
   clearTimer();
   currentProblem = null;
-  answerInput.disabled = true;
+  isRunning = false;
+  isCheckpointPaused = false;
+  answerInput.readOnly = true;
   submitButton.disabled = true;
   feedback.className = "feedback correct";
   feedback.textContent = "Perfect board.";
@@ -276,13 +337,23 @@ function stopConfetti() {
   confettiContext.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
 }
 
-startButton.addEventListener("click", startGame);
+startButton.addEventListener("click", handleStartButton);
 resetButton.addEventListener("click", () => resetProgress("Board reset. Start again."));
 playAgainButton.addEventListener("click", () => {
   resetProgress("New board ready.");
   startGame();
 });
 answerForm.addEventListener("submit", handleSubmit);
+answerInput.addEventListener("focus", () => {
+  if (!isRunning && !isCheckpointPaused) {
+    startGame();
+  }
+});
+answerInput.addEventListener("beforeinput", () => {
+  if (!isRunning && !isCheckpointPaused) {
+    startGame();
+  }
+});
 window.addEventListener("resize", () => {
   if (victory.classList.contains("show")) {
     resizeConfettiCanvas();

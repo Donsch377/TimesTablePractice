@@ -474,10 +474,14 @@ input:focus {
   button,
   input {
     min-height: 2rem;
+  }
+
+  button {
     font-size: 0.82rem;
   }
 
   input {
+    font-size: 16px;
     padding: 0 0.5rem;
   }
 
