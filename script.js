@@ -182,7 +182,15 @@ function handleSubmit(event) {
     return;
   }
 
-  const value = Number.parseInt(answerInput.value.trim(), 10);
+  const rawAnswer = answerInput.value.trim();
+  if (!rawAnswer) {
+    feedback.className = "feedback";
+    feedback.textContent = "Type an answer first.";
+    answerInput.focus();
+    return;
+  }
+
+  const value = Number.parseInt(rawAnswer, 10);
   if (value === currentProblem.answer) {
     clearTimer();
     completed.add(currentProblem.key);
