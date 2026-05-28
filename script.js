@@ -29,6 +29,8 @@ let confettiPieces = [];
 let isCheckpointPaused = false;
 let isRunning = false;
 let suppressFocusStart = false;
+let isConfirmingReset = false;
+let resetConfirmId = null;
 
 function problemKey(left, right) {
   return `${left}x${right}`;
@@ -74,6 +76,7 @@ function createCell(text, className) {
 
 function startGame() {
   clearPendingNext();
+  clearResetConfirmation();
   stopConfetti();
   victory.classList.remove("show");
   victory.setAttribute("aria-hidden", "true");
@@ -97,6 +100,7 @@ function startGame() {
 function resetProgress(message = "Board reset. Start again.") {
   clearTimer();
   clearPendingNext();
+  clearResetConfirmation();
   completed = new Set();
   currentProblem = null;
   streak = 0;
@@ -162,6 +166,14 @@ function clearPendingNext() {
   if (nextPromptId) {
     window.clearTimeout(nextPromptId);
     nextPromptId = null;
+  }
+}
+
+function clearResetConfirmation() {
+  isConfirmingReset = false;
+  if (resetConfirmId) {
+    window.clearTimeout(resetConfirmId);
+    resetConfirmId = null;
   }
 }
 
@@ -245,6 +257,7 @@ function pauseForCheckpoint() {
 }
 
 function continueFromCheckpoint() {
+  clearResetConfirmation();
   isCheckpointPaused = false;
   isRunning = true;
   startButton.textContent = "Reset Board";
@@ -254,8 +267,28 @@ function continueFromCheckpoint() {
 
 function handleStartButton() {
   if (isRunning && !isCheckpointPaused) {
+    if (!isConfirmingReset) {
+      isConfirmingReset = true;
+      startButton.textContent = "Confirm Reset";
+      feedback.className = "feedback wrong";
+      feedback.textContent = "Tap again to reset.";
+      resetConfirmId = window.setTimeout(() => {
+        clearResetConfirmation();
+        if (isRunning && !isCheckpointPaused) {
+          startButton.textContent = "Reset Board";
+          feedback.className = "feedback";
+          feedback.textContent = "Keep going.";
+        }
+      }, 3000);
+      answerInput.focus();
+      return;
+    }
+
     resetProgress("New board ready.");
+    startGame();
+    return;
   }
+
   startGame();
 }
 
