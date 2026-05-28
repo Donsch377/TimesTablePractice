@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Times Table Practice</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="practice-panel" aria-labelledby="game-title">
+        <div class="masthead">
+          <div>
+            <p class="eyebrow">1-12 Practice</p>
+            <h1 id="game-title">Times Table Practice</h1>
+          </div>
+          <div class="score-strip" aria-live="polite">
+            <span><strong id="completed-count">0</strong> / 144 done</span>
+            <span>Streak <strong id="streak-count">0</strong></span>
+          </div>
+        </div>
+
+        <div class="question-area" aria-live="polite">
+          <div class="timer-shell" aria-label="10 second timer">
+            <div id="timer-fill" class="timer-fill"></div>
+          </div>
+          <p id="feedback" class="feedback">Press Start to begin.</p>
+          <div id="question" class="question">Ready?</div>
+          <form id="answer-form" class="answer-form" autocomplete="off">
+            <label class="sr-only" for="answer-input">Answer</label>
+            <input
+              id="answer-input"
+              name="answer"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              placeholder="Type answer"
+              disabled
+            >
+            <button id="submit-button" type="submit" disabled>Answer</button>
+          </form>
+          <div class="actions">
+            <button id="start-button" type="button">Start</button>
+            <button id="reset-button" type="button">Reset</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="board-panel" aria-labelledby="board-title">
+        <div class="board-heading">
+          <h2 id="board-title">The 1-12 Board</h2>
+          <p id="board-note">Each correct answer lights up one square.</p>
+        </div>
+        <div id="table-board" class="table-board" aria-label="Times table progress board"></div>
+      </section>
+    </main>
+
+    <div id="victory" class="victory" aria-hidden="true">
+      <canvas id="confetti-canvas"></canvas>
+      <div class="victory-message" role="status">
+        <p>Board Complete</p>
+        <h2>144 / 144</h2>
+        <button id="play-again-button" type="button">Play Again</button>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
