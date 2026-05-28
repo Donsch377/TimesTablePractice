@@ -9,7 +9,6 @@ const answerForm = document.querySelector("#answer-form");
 const answerInput = document.querySelector("#answer-input");
 const submitButton = document.querySelector("#submit-button");
 const startButton = document.querySelector("#start-button");
-const resetButton = document.querySelector("#reset-button");
 const completedCount = document.querySelector("#completed-count");
 const streakCount = document.querySelector("#streak-count");
 const timerFill = document.querySelector("#timer-fill");
@@ -29,6 +28,7 @@ let confettiId = null;
 let confettiPieces = [];
 let isCheckpointPaused = false;
 let isRunning = false;
+let suppressFocusStart = false;
 
 function problemKey(left, right) {
   return `${left}x${right}`;
@@ -87,9 +87,8 @@ function startGame() {
     resetProgress();
   }
 
-  startButton.textContent = "Restart";
+  startButton.textContent = "Reset Board";
   answerInput.readOnly = false;
-  submitButton.disabled = false;
   isRunning = true;
   feedback.className = "feedback";
   nextProblem();
@@ -110,9 +109,8 @@ function resetProgress(message = "Board reset. Start again.") {
   feedback.textContent = message;
   answerInput.value = "";
   answerInput.readOnly = false;
-  answerInput.placeholder = "Click to start";
-  submitButton.disabled = true;
-  startButton.textContent = "Start";
+  answerInput.placeholder = "Start";
+  startButton.textContent = "Start / Reset";
   timerFill.classList.remove("running");
   timerFill.style.transform = "scaleX(0)";
 }
@@ -131,7 +129,6 @@ function nextProblem() {
   answerInput.value = "";
   answerInput.readOnly = false;
   answerInput.placeholder = "Type answer";
-  submitButton.disabled = false;
   answerInput.focus();
   feedback.className = "feedback";
   feedback.textContent = "You have 10 seconds.";
@@ -146,7 +143,11 @@ function startTimer() {
   timerFill.classList.add("running");
 
   timerId = window.setTimeout(() => {
-    failBoard("Time is up. Board reset.");
+    if (currentProblem) {
+      failBoard(`Time is up. ${currentProblem.left} x ${currentProblem.right} = ${currentProblem.answer}. Board reset.`);
+    } else {
+      failBoard("Time is up. Board reset.");
+    }
   }, TOTAL_SECONDS * 1000);
 }
 
@@ -190,8 +191,6 @@ function handleSubmit(event) {
     updateStats();
     updateBoard();
     currentProblem = null;
-    answerInput.readOnly = true;
-    submitButton.disabled = true;
     timerFill.classList.remove("running");
 
     if (completed.size % CHECKPOINT_SIZE === 0 && completed.size < problems.length) {
@@ -218,6 +217,11 @@ function failBoard(message) {
   question.classList.add("shake");
   resetProgress(message);
   feedback.className = "feedback wrong";
+  suppressFocusStart = true;
+  answerInput.focus();
+  window.setTimeout(() => {
+    suppressFocusStart = false;
+  }, 0);
 }
 
 function pauseForCheckpoint() {
@@ -235,9 +239,8 @@ function pauseForCheckpoint() {
 function continueFromCheckpoint() {
   isCheckpointPaused = false;
   isRunning = true;
-  startButton.textContent = "Restart";
+  startButton.textContent = "Reset Board";
   answerInput.readOnly = false;
-  submitButton.disabled = false;
   nextProblem();
 }
 
@@ -268,7 +271,6 @@ function completeBoard() {
   isRunning = false;
   isCheckpointPaused = false;
   answerInput.readOnly = true;
-  submitButton.disabled = true;
   feedback.className = "feedback correct";
   feedback.textContent = "Perfect board.";
   question.textContent = "144!";
@@ -338,13 +340,16 @@ function stopConfetti() {
 }
 
 startButton.addEventListener("click", handleStartButton);
-resetButton.addEventListener("click", () => resetProgress("Board reset. Start again."));
 playAgainButton.addEventListener("click", () => {
   resetProgress("New board ready.");
   startGame();
 });
 answerForm.addEventListener("submit", handleSubmit);
 answerInput.addEventListener("focus", () => {
+  if (suppressFocusStart) {
+    return;
+  }
+
   if (!isRunning && !isCheckpointPaused) {
     startGame();
   }
@@ -362,4 +367,4 @@ window.addEventListener("resize", () => {
 
 problems = createProblems();
 buildBoard();
-resetProgress("Press Start to begin.");
+resetProgress("Click the box or Start / Reset to begin.");

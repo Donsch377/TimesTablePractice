@@ -5,10 +5,10 @@ A simple GitHub Pages game for practicing multiplication facts from 1 x 1 throug
 ## How It Works
 
 - The board shows all 144 multiplication facts.
-- Click the answer box or press Start, then answer the random prompt within 10 seconds.
+- Click the answer box or press Start / Reset, then answer the random prompt within 10 seconds.
 - Correct answers reveal their square and move to another unanswered prompt.
 - Every 10 correct answers creates a checkpoint and pauses the timer until Continue.
-- A wrong answer, or running out of time, resets the board.
+- A wrong answer, or running out of time, shows the correct answer and resets the board.
 - Completing all 144 facts triggers a full-screen celebration.
 
 ## GitHub Pages

@@ -211,19 +211,22 @@ input:focus {
   outline: 3px solid rgba(45, 108, 223, 0.17);
 }
 
-.actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.6rem;
-}
-
-#reset-button,
 #play-again-button {
   background: #34434b;
 }
 
-#reset-button:hover,
 #play-again-button:hover {
+  background: #243138;
+  box-shadow: 0 10px 28px rgba(36, 49, 56, 0.22);
+}
+
+.game-control {
+  width: min(11rem, 100%);
+  margin-top: clamp(0.75rem, 2vh, 1.25rem);
+  background: #34434b;
+}
+
+.game-control:hover {
   background: #243138;
   box-shadow: 0 10px 28px rgba(36, 49, 56, 0.22);
 }

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Times Table Practice</title>
-    <link rel="stylesheet" href="styles.css?v=20260528-session">
+    <link rel="stylesheet" href="styles.css?v=20260528-control2">
   </head>
   <body>
     <main class="app-shell">
@@ -13,6 +13,7 @@
           <div>
             <p class="eyebrow">1-12 Practice</p>
             <h1 id="game-title">Times Table Practice</h1>
+            <button id="start-button" class="game-control" type="button">Start / Reset</button>
           </div>
           <div class="score-strip" aria-live="polite">
             <span><strong id="completed-count">0</strong> / 144 done</span>
@@ -33,14 +34,10 @@
               name="answer"
               inputmode="numeric"
               pattern="[0-9]*"
-              placeholder="Click to start"
+              placeholder="Start"
             >
-            <button id="submit-button" type="submit" disabled>Answer</button>
+            <button id="submit-button" type="submit">Enter</button>
           </form>
-          <div class="actions">
-            <button id="start-button" type="button">Start</button>
-            <button id="reset-button" type="button">Reset</button>
-          </div>
         </div>
       </section>
 
@@ -62,6 +59,6 @@
       </div>
     </div>
 
-    <script src="script.js?v=20260528-session"></script>
+    <script src="script.js?v=20260528-control2"></script>
   </body>
 </html>
