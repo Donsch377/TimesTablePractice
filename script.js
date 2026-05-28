@@ -52,8 +52,9 @@ function buildBoard() {
   FACTORS.forEach((left) => {
     board.appendChild(createCell(left, "cell header"));
     FACTORS.forEach((right) => {
-      const cell = createCell(left * right, "cell");
+      const cell = createCell("", "cell");
       cell.dataset.key = problemKey(left, right);
+      cell.dataset.answer = left * right;
       cell.setAttribute("aria-label", `${left} times ${right}`);
       board.appendChild(cell);
     });
@@ -195,7 +196,9 @@ function updateStats() {
 
 function updateBoard() {
   document.querySelectorAll(".cell[data-key]").forEach((cell) => {
-    cell.classList.toggle("complete", completed.has(cell.dataset.key));
+    const isComplete = completed.has(cell.dataset.key);
+    cell.textContent = isComplete ? cell.dataset.answer : "";
+    cell.classList.toggle("complete", isComplete);
     cell.classList.toggle("problem", currentProblem?.key === cell.dataset.key);
   });
 }
