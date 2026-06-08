@@ -3,62 +3,163 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Times Table Practice</title>
-    <link rel="stylesheet" href="styles.css?v=20260528-reset-confirm">
+    <meta name="theme-color" content="#172126">
+    <title>Math Practice</title>
+    <link rel="stylesheet" href="styles.css?v=20260608-math-practice">
   </head>
   <body>
-    <main class="app-shell">
-      <section class="practice-panel" aria-labelledby="game-title">
-        <div class="masthead">
-          <div>
-            <p class="eyebrow">1-12 Practice</p>
-            <h1 id="game-title">Times Table Practice</h1>
-            <button id="start-button" class="game-control" type="button">Start / Reset</button>
-          </div>
-          <div class="score-strip" aria-live="polite">
-            <span><strong id="completed-count">0</strong> / 144 done</span>
-            <span>High <strong id="streak-count">0</strong></span>
-          </div>
-        </div>
+    <header class="topbar">
+      <button id="home-button" class="brand" type="button" aria-label="Go to game selection">
+        <span class="brand-mark">M</span>
+        <span>Math Practice</span>
+      </button>
+      <div class="topbar-record"><span>Best run</span> <strong id="header-best">0</strong></div>
+    </header>
 
-        <div class="question-area" aria-live="polite">
-          <div class="timer-shell" aria-label="10 second timer">
-            <div id="timer-fill" class="timer-fill"></div>
+    <main>
+      <section id="home-screen" class="screen active">
+        <div class="home-shell">
+          <div class="hero">
+            <p class="eyebrow">Choose your practice</p>
+            <h1>What do you want to work on?</h1>
+            <p>Build multiplication mastery over time or see how far you can go simplifying linear expressions.</p>
           </div>
-          <p id="feedback" class="feedback">Press Start to begin.</p>
-          <div id="question" class="question">Ready?</div>
-          <form id="answer-form" class="answer-form" autocomplete="off">
-            <label class="sr-only" for="answer-input">Answer</label>
-            <input
-              id="answer-input"
-              name="answer"
-              inputmode="numeric"
-              pattern="[0-9]*"
-              placeholder="Start"
-            >
-            <button id="submit-button" type="submit">Enter</button>
-          </form>
+
+          <div class="game-grid">
+            <button class="game-card times-card" type="button" data-start-game="times">
+              <span class="card-icon">6 × 7</span>
+              <span class="card-copy">
+                <strong>Times Tables</strong>
+                <small>Type answers and fill your 1-12 table over time.</small>
+              </span>
+              <span class="card-record"><b id="times-mastered-home">0</b> / 144 mastered</span>
+              <span class="card-arrow">Practice →</span>
+            </button>
+
+            <button class="game-card linear-card" type="button" data-start-game="linear">
+              <span class="card-icon">x + y</span>
+              <span class="card-copy">
+                <strong>Linear Expressions</strong>
+                <small>Add, subtract, distribute, combine like terms, and identify linear expressions.</small>
+              </span>
+              <span class="card-record">Best run <b id="linear-best-home">0</b></span>
+              <span class="card-arrow">Start run →</span>
+            </button>
+          </div>
+
+          <section class="save-panel">
+            <div>
+              <p class="eyebrow">Portable progress</p>
+              <h2>Save code</h2>
+              <p>This versioned code contains records for every game. Copy it to move your progress to another device.</p>
+            </div>
+            <div class="save-actions">
+              <label for="save-code">Your save code</label>
+              <textarea id="save-code" rows="4" spellcheck="false"></textarea>
+              <div class="button-row">
+                <button id="load-save" class="secondary-button" type="button">Load code</button>
+                <button id="copy-save" class="primary-button" type="button">Copy code</button>
+              </div>
+              <p id="save-message" class="save-message" aria-live="polite"></p>
+            </div>
+          </section>
         </div>
       </section>
 
-      <section class="board-panel" aria-labelledby="board-title">
-        <div class="board-heading">
-          <h2 id="board-title">The 1-12 Board</h2>
-          <p id="board-note">Correct answers reveal one square.</p>
+      <section id="times-screen" class="screen">
+        <div class="times-shell">
+          <section class="practice-panel" aria-labelledby="times-title">
+            <div class="masthead">
+              <div>
+                <button class="back-button" type="button" data-go-home>← Games</button>
+                <p class="eyebrow">1-12 Practice</p>
+                <h1 id="times-title">Times Tables</h1>
+                <button id="times-start-button" class="game-control" type="button">Start</button>
+              </div>
+              <div class="score-strip" aria-live="polite">
+                <span><strong id="times-completed-count">0</strong> / 144 done</span>
+                <span>Best streak <strong id="times-streak-count">0</strong></span>
+              </div>
+            </div>
+
+            <div class="question-area" aria-live="polite">
+              <div class="timer-shell" aria-label="10 second timer">
+                <div id="times-timer-fill" class="timer-fill"></div>
+              </div>
+              <p id="times-feedback" class="feedback">Press Start to begin.</p>
+              <div id="times-question" class="times-question">Ready?</div>
+              <form id="times-answer-form" class="answer-form" autocomplete="off">
+                <label class="sr-only" for="times-answer-input">Answer</label>
+                <input id="times-answer-input" name="answer" inputmode="numeric" pattern="[0-9]*" placeholder="Start">
+                <button type="submit">Enter</button>
+              </form>
+            </div>
+          </section>
+
+          <section class="board-panel" aria-labelledby="board-title">
+            <div class="board-heading">
+              <h2 id="board-title">Your 1-12 Table</h2>
+              <p>Correct answers stay filled in your save.</p>
+            </div>
+            <div id="table-board" class="table-board" aria-label="Times table progress board"></div>
+          </section>
         </div>
-        <div id="table-board" class="table-board" aria-label="Times table progress board"></div>
+      </section>
+
+      <section id="linear-screen" class="screen">
+        <div class="run-shell">
+          <div class="game-status">
+            <button class="back-button" type="button" data-quit-linear>← End run</button>
+            <div class="status-item"><span>Score</span><strong id="linear-score">0</strong></div>
+            <div class="status-item"><span>Next checkpoint</span><strong id="linear-checkpoint-count">10</strong></div>
+            <div class="status-item"><span>Best</span><strong id="linear-best">0</strong></div>
+          </div>
+          <div class="linear-timer-wrap" aria-label="Time remaining">
+            <div id="linear-timer-bar" class="linear-timer-bar"></div>
+          </div>
+          <p class="linear-timer-text"><strong id="linear-timer-text">30</strong> seconds</p>
+
+          <article class="linear-question-card">
+            <p id="linear-question-type" class="question-type"></p>
+            <h2 id="linear-question-prompt"></h2>
+            <p id="linear-question-help" class="question-help"></p>
+            <div id="linear-answers" class="linear-answers"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="result-screen" class="screen result-screen">
+        <div class="result-icon">✓</div>
+        <p id="result-eyebrow" class="eyebrow">Run complete</p>
+        <h1 id="result-title">Keep building</h1>
+        <p id="result-copy" class="result-copy"></p>
+        <div class="result-score"><span>Score</span><strong id="result-score">0</strong></div>
+        <div class="button-row centered">
+          <button id="result-home" class="secondary-button" type="button">Choose a game</button>
+          <button id="play-linear-again" class="primary-button" type="button">Play again</button>
+        </div>
       </section>
     </main>
+
+    <div id="checkpoint-modal" class="modal-backdrop" hidden>
+      <section class="checkpoint-modal" role="dialog" aria-modal="true" aria-labelledby="checkpoint-title">
+        <span id="checkpoint-number" class="checkpoint-number">10</span>
+        <p class="eyebrow">Checkpoint reached</p>
+        <h2 id="checkpoint-title">Take a breath.</h2>
+        <p>Your timer is paused. Keep going when you are ready.</p>
+        <button id="continue-linear" class="primary-button" type="button">Continue the run</button>
+      </section>
+    </div>
 
     <div id="victory" class="victory" aria-hidden="true">
       <canvas id="confetti-canvas"></canvas>
       <div class="victory-message" role="status">
-        <p>Board Complete</p>
+        <p>Table Complete</p>
         <h2>144 / 144</h2>
-        <button id="play-again-button" type="button">Play Again</button>
+        <button id="close-victory" type="button">Back to Games</button>
       </div>
     </div>
 
-    <script src="script.js?v=20260528-reset-confirm"></script>
+    <script src="script.js?v=20260608-math-practice"></script>
   </body>
 </html>
