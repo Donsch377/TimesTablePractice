@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111827" />
+    <title>All Math Practice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800&family=Space+Mono:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <button class="brand" id="home-button" type="button" aria-label="Go to game selection">
+          <span class="brand-mark">M</span>
+          <span>All Math Practice</span>
+        </button>
+        <div class="topbar-stats">
+          <span>Best</span>
+          <strong id="header-best">0</strong>
+        </div>
+      </header>
+
+      <section class="screen active" id="home-screen">
+        <div class="hero">
+          <p class="eyebrow">Pick a practice mode</p>
+          <h1>How far can you go?</h1>
+          <p class="hero-copy">
+            You have 30 seconds for each question. Reach a checkpoint every 10 correct answers.
+          </p>
+        </div>
+
+        <div class="game-grid">
+          <button class="game-card linear-card" type="button" data-start-game="linear">
+            <span class="card-icon">x + y</span>
+            <span class="card-copy">
+              <strong>Linear Expressions</strong>
+              <small>Combine, add, subtract, and spot non-linear expressions.</small>
+            </span>
+            <span class="card-arrow">Start →</span>
+          </button>
+
+          <button class="game-card times-card" type="button" data-start-game="times">
+            <span class="card-icon">6 × 7</span>
+            <span class="card-copy">
+              <strong>Times Tables</strong>
+              <small>Keep sharpening your multiplication facts.</small>
+            </span>
+            <span class="card-arrow">Start →</span>
+          </button>
+        </div>
+
+        <section class="save-panel">
+          <div>
+            <p class="eyebrow">Portable progress</p>
+            <h2>Save code</h2>
+            <p>Your records also save on this device. Copy this code to move them anywhere.</p>
+          </div>
+          <div class="save-actions">
+            <label for="save-code">Your save code</label>
+            <textarea id="save-code" rows="3" spellcheck="false"></textarea>
+            <div class="button-row">
+              <button class="secondary-button" id="load-save" type="button">Load code</button>
+              <button class="primary-button" id="copy-save" type="button">Copy code</button>
+            </div>
+            <p class="save-message" id="save-message" aria-live="polite"></p>
+          </div>
+        </section>
+      </section>
+
+      <section class="screen" id="game-screen">
+        <div class="game-status">
+          <button class="quit-button" id="quit-button" type="button">← Quit</button>
+          <div class="status-item">
+            <span>Score</span>
+            <strong id="score">0</strong>
+          </div>
+          <div class="status-item">
+            <span>Next checkpoint</span>
+            <strong id="checkpoint-count">10</strong>
+          </div>
+        </div>
+
+        <div class="timer-wrap" aria-label="Time remaining">
+          <div class="timer-bar" id="timer-bar"></div>
+        </div>
+        <p class="timer-text"><strong id="timer-text">30</strong> seconds</p>
+
+        <article class="question-card">
+          <p class="question-type" id="question-type"></p>
+          <h2 id="question-prompt"></h2>
+          <p class="question-help" id="question-help"></p>
+          <div class="answers" id="answers"></div>
+        </article>
+      </section>
+
+      <section class="screen result-screen" id="result-screen">
+        <div class="result-icon" id="result-icon">✓</div>
+        <p class="eyebrow" id="result-eyebrow">Run complete</p>
+        <h1 id="result-title">Nice work</h1>
+        <p class="result-copy" id="result-copy"></p>
+        <div class="result-score">
+          <span>Score</span>
+          <strong id="result-score">0</strong>
+        </div>
+        <div class="button-row centered">
+          <button class="secondary-button" id="result-home" type="button">Choose a game</button>
+          <button class="primary-button" id="play-again" type="button">Play again</button>
+        </div>
+      </section>
+
+      <div class="modal-backdrop" id="checkpoint-modal" hidden>
+        <section class="checkpoint-modal" role="dialog" aria-modal="true" aria-labelledby="checkpoint-title">
+          <span class="checkpoint-number" id="checkpoint-number">10</span>
+          <p class="eyebrow">Checkpoint reached</p>
+          <h2 id="checkpoint-title">Take a breath.</h2>
+          <p>Your timer is paused. Keep going when you are ready.</p>
+          <button class="primary-button" id="continue-button" type="button">Continue the run</button>
+        </section>
+      </div>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
