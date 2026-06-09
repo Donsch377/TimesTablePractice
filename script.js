@@ -62,6 +62,8 @@ let linearCurrent = null;
 let linearAccepting = false;
 let linearTimeLeft = LINEAR_SECONDS;
 let linearTimerId = null;
+let linearQuestionDeck = [];
+let linearSeenPrompts = new Set();
 
 let confettiId = null;
 let confettiPieces = [];
@@ -469,6 +471,65 @@ function makeLinearCheckQuestion() {
   };
 }
 
+const EASY_LINEAR_QUESTIONS = [
+  {
+    type: "Combine like terms",
+    prompt: "Simplify:\n2x + 3x",
+    help: "Add the coefficients because both terms have x.",
+    answer: "5x",
+    choices: ["5x", "6x", "5x²", "x"],
+  },
+  {
+    type: "Combine like terms",
+    prompt: "Simplify:\n7y − 2y",
+    help: "Subtract the coefficients because both terms have y.",
+    answer: "5y",
+    choices: ["5y", "9y", "5", "9y²"],
+  },
+  {
+    type: "Add linear expressions",
+    prompt: "Add the entire second expression to the first:\n(3x + 2) + (2x + 1)",
+    help: "Combine the x terms and then combine the constants.",
+    answer: "5x + 3",
+    choices: ["5x + 3", "5x + 1", "6x + 3", "5x + 2"],
+  },
+  {
+    type: "Subtract linear expressions",
+    prompt: "Subtract the entire second expression from the first:\n(8x) − (3x)",
+    help: "Subtract the coefficients because both terms have x.",
+    answer: "5x",
+    choices: ["5x", "11x", "5", "11x²"],
+  },
+  {
+    type: "Distribute",
+    prompt: "Simplify:\n3(x + 2)",
+    help: "Multiply both terms inside the parentheses by 3.",
+    answer: "3x + 6",
+    choices: ["3x + 6", "3x + 2", "x + 6", "6x"],
+  },
+  {
+    type: "Combine like terms",
+    prompt: "Simplify:\nx + x + 4",
+    help: "Two x terms combine to make 2x.",
+    answer: "2x + 4",
+    choices: ["2x + 4", "x + 4", "2x + 8", "x² + 4"],
+  },
+  {
+    type: "Add linear expressions",
+    prompt: "Add the entire second expression to the first:\n(y + 4) + (2y + 3)",
+    help: "Combine the y terms and then combine the constants.",
+    answer: "3y + 7",
+    choices: ["3y + 7", "3y + 1", "2y + 7", "3y + 12"],
+  },
+  {
+    type: "Recognize linear expressions",
+    prompt: "Which expression is linear?",
+    help: "A linear expression has variables only to the first power.",
+    answer: "4x + 3",
+    choices: ["4x + 3", "x² + 3", "4 ÷ x", "xy + 3"],
+  },
+];
+
 const CURATED_LINEAR_QUESTIONS = [
   {
     type: "Add linear expressions",
@@ -542,19 +603,40 @@ const CURATED_LINEAR_QUESTIONS = [
   },
 ];
 
-function makeLinearQuestion() {
+function cloneQuestion(question) {
+  return { ...question, choices: shuffle(question.choices) };
+}
+
+function buildLinearQuestionDeck() {
+  linearSeenPrompts = new Set();
+  linearQuestionDeck = [
+    ...shuffle(EASY_LINEAR_QUESTIONS).map(cloneQuestion),
+    ...shuffle(CURATED_LINEAR_QUESTIONS).map(cloneQuestion),
+  ];
+}
+
+function makeUniqueGeneratedLinearQuestion() {
   const makers = [makeAddQuestion, makeSubtractQuestion, makeCombineQuestion, makeDistributeQuestion, makeLinearCheckQuestion];
-  if (Math.random() < 0.65) {
-    const question = CURATED_LINEAR_QUESTIONS[randomInt(0, CURATED_LINEAR_QUESTIONS.length - 1)];
-    return { ...question, choices: shuffle(question.choices) };
+  for (let attempt = 0; attempt < 500; attempt += 1) {
+    const question = makers[randomInt(0, makers.length - 1)]();
+    if (!linearSeenPrompts.has(question.prompt)) return question;
   }
-  return makers[randomInt(0, makers.length - 1)]();
+  throw new Error("Could not create a new unique linear question.");
+}
+
+function nextUniqueLinearQuestion() {
+  const question = linearQuestionDeck.length
+    ? linearQuestionDeck.shift()
+    : makeUniqueGeneratedLinearQuestion();
+  linearSeenPrompts.add(question.prompt);
+  return question;
 }
 
 function startLinearRun() {
   stopTimesSession();
   showScreen("linear");
   linearScore = 0;
+  buildLinearQuestionDeck();
   save.games.linear.runs += 1;
   persistSave();
   updateLinearScore();
@@ -569,7 +651,7 @@ function updateLinearScore() {
 }
 
 function nextLinearQuestion() {
-  linearCurrent = makeLinearQuestion();
+  linearCurrent = nextUniqueLinearQuestion();
   els.linearType.textContent = linearCurrent.type;
   els.linearPrompt.textContent = linearCurrent.prompt;
   els.linearHelp.textContent = linearCurrent.help;
