@@ -9,6 +9,7 @@ const screens = {
   home: document.querySelector("#home-screen"),
   times: document.querySelector("#times-screen"),
   linear: document.querySelector("#linear-screen"),
+  whatMakes: document.querySelector("#what-makes-screen"),
   result: document.querySelector("#result-screen"),
 };
 
@@ -16,6 +17,7 @@ const els = {
   headerBest: document.querySelector("#header-best"),
   timesMasteredHome: document.querySelector("#times-mastered-home"),
   linearBestHome: document.querySelector("#linear-best-home"),
+  makesSolvedHome: document.querySelector("#makes-solved-home"),
   saveCode: document.querySelector("#save-code"),
   saveMessage: document.querySelector("#save-message"),
   board: document.querySelector("#table-board"),
@@ -36,6 +38,19 @@ const els = {
   linearPrompt: document.querySelector("#linear-question-prompt"),
   linearHelp: document.querySelector("#linear-question-help"),
   linearAnswers: document.querySelector("#linear-answers"),
+  makesScore: document.querySelector("#makes-score"),
+  makesTotal: document.querySelector("#makes-total"),
+  makesBest: document.querySelector("#makes-best"),
+  makesValues: document.querySelector("#makes-values"),
+  makesFeedback: document.querySelector("#makes-feedback"),
+  makesDice: [
+    document.querySelector("#makes-die-a"),
+    document.querySelector("#makes-die-b"),
+    document.querySelector("#makes-die-c"),
+    document.querySelector("#makes-die-d"),
+    document.querySelector("#makes-die-e"),
+  ],
+  makesOperators: [...document.querySelectorAll("[data-operator-slot]")],
   checkpointModal: document.querySelector("#checkpoint-modal"),
   checkpointNumber: document.querySelector("#checkpoint-number"),
   resultEyebrow: document.querySelector("#result-eyebrow"),
@@ -65,6 +80,11 @@ let linearTimerId = null;
 let linearQuestionDeck = [];
 let linearSeenPrompts = new Set();
 
+const MATH_OPERATORS = ["+", "−", "×", "÷"];
+let makesCurrent = null;
+let makesSelectedOperators = [0, 0, 0];
+let makesSessionScore = 0;
+
 let confettiId = null;
 let confettiPieces = [];
 const confettiContext = els.confettiCanvas.getContext("2d");
@@ -76,6 +96,7 @@ function defaultSave() {
     games: {
       times: { mastered: [], highStreak: 0, totalCorrect: 0, sessions: 0 },
       linear: { highScore: 0, totalCorrect: 0, runs: 0, checkpoints: 0 },
+      whatMakes: { totalSolved: 0, bestSession: 0, sessions: 0, hintsUsed: 0 },
     },
   };
 }
@@ -99,6 +120,14 @@ function normalizeSave(candidate) {
     totalCorrect: positiveNumber(linear.totalCorrect),
     runs: positiveNumber(linear.runs),
     checkpoints: positiveNumber(linear.checkpoints),
+  };
+
+  const whatMakes = candidate.games?.whatMakes || {};
+  normalized.games.whatMakes = {
+    totalSolved: positiveNumber(whatMakes.totalSolved),
+    bestSession: positiveNumber(whatMakes.bestSession),
+    sessions: positiveNumber(whatMakes.sessions),
+    hintsUsed: positiveNumber(whatMakes.hintsUsed),
   };
   normalized.profile.createdAt = candidate.profile?.createdAt || normalized.profile.createdAt;
   return normalized;
@@ -157,10 +186,18 @@ function decodeSave(code) {
 function updateRecords() {
   els.timesMasteredHome.textContent = timesCompleted.size;
   els.linearBestHome.textContent = save.games.linear.highScore;
-  els.headerBest.textContent = Math.max(save.games.times.highStreak, save.games.linear.highScore);
+  els.makesSolvedHome.textContent = save.games.whatMakes.totalSolved;
+  els.headerBest.textContent = Math.max(
+    save.games.times.highStreak,
+    save.games.linear.highScore,
+    save.games.whatMakes.bestSession
+  );
   els.timesCompleted.textContent = timesCompleted.size;
   els.timesStreak.textContent = save.games.times.highStreak;
   els.linearBest.textContent = save.games.linear.highScore;
+  els.makesScore.textContent = makesSessionScore;
+  els.makesTotal.textContent = save.games.whatMakes.totalSolved;
+  els.makesBest.textContent = save.games.whatMakes.bestSession;
 }
 
 function showScreen(name) {
@@ -737,6 +774,159 @@ function finishLinearRun(reason) {
   showScreen("result");
 }
 
+function greatestCommonDivisor(a, b) {
+  let left = Math.abs(a);
+  let right = Math.abs(b);
+  while (right) {
+    [left, right] = [right, left % right];
+  }
+  return left || 1;
+}
+
+function fraction(numerator, denominator = 1) {
+  if (denominator === 0) return null;
+  const sign = denominator < 0 ? -1 : 1;
+  const divisor = greatestCommonDivisor(numerator, denominator);
+  return {
+    numerator: sign * numerator / divisor,
+    denominator: Math.abs(denominator) / divisor,
+  };
+}
+
+function applyMathOperator(left, right, operatorIndex) {
+  if (!left || !right) return null;
+  if (operatorIndex === 0) {
+    return fraction(
+      left.numerator * right.denominator + right.numerator * left.denominator,
+      left.denominator * right.denominator
+    );
+  }
+  if (operatorIndex === 1) {
+    return fraction(
+      left.numerator * right.denominator - right.numerator * left.denominator,
+      left.denominator * right.denominator
+    );
+  }
+  if (operatorIndex === 2) {
+    return fraction(left.numerator * right.numerator, left.denominator * right.denominator);
+  }
+  if (right.numerator === 0) return null;
+  return fraction(left.numerator * right.denominator, left.denominator * right.numerator);
+}
+
+function evaluateMakesSides(dice, operators) {
+  const topFirst = applyMathOperator(fraction(dice[0]), fraction(dice[1]), operators[0]);
+  return {
+    left: applyMathOperator(topFirst, fraction(dice[2]), operators[1]),
+    right: applyMathOperator(fraction(dice[3]), fraction(dice[4]), operators[2]),
+  };
+}
+
+function fractionsEqual(left, right) {
+  return Boolean(left && right && left.numerator === right.numerator && left.denominator === right.denominator);
+}
+
+function formatFraction(value) {
+  if (!value) return "undefined";
+  return value.denominator === 1 ? String(value.numerator) : `${value.numerator}/${value.denominator}`;
+}
+
+function findMakesSolutions(dice) {
+  const solutions = [];
+  for (let first = 0; first < MATH_OPERATORS.length; first += 1) {
+    for (let second = 0; second < MATH_OPERATORS.length; second += 1) {
+      for (let third = 0; third < MATH_OPERATORS.length; third += 1) {
+        const operators = [first, second, third];
+        const values = evaluateMakesSides(dice, operators);
+        if (fractionsEqual(values.left, values.right)) solutions.push(operators);
+      }
+    }
+  }
+  return solutions;
+}
+
+function generateMakesPuzzle() {
+  for (let attempt = 0; attempt < 1000; attempt += 1) {
+    const dice = Array.from({ length: 5 }, () => randomInt(1, 6));
+    if (makesCurrent?.dice.join(",") === dice.join(",")) continue;
+    const solutions = findMakesSolutions(dice);
+    if (solutions.length) return { dice, solutions, solved: false, hintShown: false };
+  }
+  const dice = [1, 2, 3, 2, 3];
+  return { dice, solutions: findMakesSolutions(dice), solved: false, hintShown: false };
+}
+
+function formatMakesEquation(dice, operators) {
+  return `(${dice[0]} ${MATH_OPERATORS[operators[0]]} ${dice[1]}) ${MATH_OPERATORS[operators[1]]} ${dice[2]} = ${dice[3]} ${MATH_OPERATORS[operators[2]]} ${dice[4]}`;
+}
+
+function paintMakesPuzzle() {
+  makesCurrent.dice.forEach((die, index) => {
+    els.makesDice[index].textContent = die;
+  });
+  makesSelectedOperators.forEach((operator, index) => {
+    els.makesOperators[index].textContent = MATH_OPERATORS[operator];
+  });
+  const values = evaluateMakesSides(makesCurrent.dice, makesSelectedOperators);
+  els.makesValues.textContent = `${formatFraction(values.left)} = ${formatFraction(values.right)}`;
+  updateRecords();
+}
+
+function nextMakesPuzzle() {
+  makesCurrent = generateMakesPuzzle();
+  makesSelectedOperators = [0, 0, 0];
+  els.makesFeedback.className = "makes-feedback";
+  els.makesFeedback.textContent = "Every puzzle has at least one solution.";
+  paintMakesPuzzle();
+}
+
+function startMakesSession() {
+  stopTimesSession();
+  stopLinearTimer();
+  makesSessionScore = 0;
+  save.games.whatMakes.sessions += 1;
+  showScreen("whatMakes");
+  nextMakesPuzzle();
+  persistSave();
+}
+
+function cycleMakesOperator(slot) {
+  if (!makesCurrent || makesCurrent.solved) return;
+  makesSelectedOperators[slot] = (makesSelectedOperators[slot] + 1) % MATH_OPERATORS.length;
+  paintMakesPuzzle();
+}
+
+function checkMakesEquation() {
+  if (!makesCurrent) return;
+  const values = evaluateMakesSides(makesCurrent.dice, makesSelectedOperators);
+  if (!fractionsEqual(values.left, values.right)) {
+    els.makesFeedback.className = "makes-feedback wrong";
+    els.makesFeedback.textContent = `${formatFraction(values.left)} does not equal ${formatFraction(values.right)} yet.`;
+    return;
+  }
+
+  els.makesFeedback.className = "makes-feedback correct";
+  els.makesFeedback.textContent = `Correct: ${formatMakesEquation(makesCurrent.dice, makesSelectedOperators)}`;
+  if (makesCurrent.solved) return;
+  makesCurrent.solved = true;
+  makesSessionScore += 1;
+  save.games.whatMakes.totalSolved += 1;
+  save.games.whatMakes.bestSession = Math.max(save.games.whatMakes.bestSession, makesSessionScore);
+  persistSave();
+}
+
+function showMakesHint() {
+  if (!makesCurrent) return;
+  const solution = makesCurrent.solutions[0];
+  if (!makesCurrent.hintShown) {
+    makesCurrent.hintShown = true;
+    save.games.whatMakes.hintsUsed += 1;
+  }
+  els.makesFeedback.className = "makes-feedback";
+  els.makesFeedback.textContent = `Try: ${formatMakesEquation(makesCurrent.dice, solution)}`;
+  persistSave();
+}
+
 function startConfetti() {
   resizeConfetti();
   const colors = ["#0f766e", "#f0b429", "#d94f4f", "#2d6cdf", "#35a06d", "#ffffff"];
@@ -773,7 +963,11 @@ function stopConfetti() {
 }
 
 document.querySelectorAll("[data-start-game]").forEach((button) => {
-  button.addEventListener("click", () => button.dataset.startGame === "times" ? startTimesSession() : startLinearRun());
+  button.addEventListener("click", () => {
+    if (button.dataset.startGame === "times") startTimesSession();
+    else if (button.dataset.startGame === "linear") startLinearRun();
+    else startMakesSession();
+  });
 });
 document.querySelectorAll("[data-go-home]").forEach((button) => button.addEventListener("click", goHome));
 document.querySelector("[data-quit-linear]").addEventListener("click", () => finishLinearRun("quit"));
@@ -784,6 +978,12 @@ document.querySelector("#continue-linear").addEventListener("click", () => {
   els.checkpointModal.hidden = true;
   nextLinearQuestion();
 });
+els.makesOperators.forEach((button) => {
+  button.addEventListener("click", () => cycleMakesOperator(Number(button.dataset.operatorSlot)));
+});
+document.querySelector("#makes-new").addEventListener("click", nextMakesPuzzle);
+document.querySelector("#makes-hint").addEventListener("click", showMakesHint);
+document.querySelector("#makes-check").addEventListener("click", checkMakesEquation);
 document.querySelector("#close-victory").addEventListener("click", () => {
   stopConfetti();
   els.victory.classList.remove("show");

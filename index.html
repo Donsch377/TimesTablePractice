@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#172126">
     <title>Math Practice</title>
-    <link rel="stylesheet" href="styles.css?v=20260608-math-practice">
+    <link rel="stylesheet" href="styles.css?v=20260610-what-makes">
   </head>
   <body>
     <header class="topbar">
@@ -22,7 +22,7 @@
           <div class="hero">
             <p class="eyebrow">Choose your practice</p>
             <h1>What do you want to work on?</h1>
-            <p>Build multiplication mastery over time or see how far you can go simplifying linear expressions.</p>
+            <p>Build multiplication mastery, simplify linear expressions, or make dice equations balance.</p>
           </div>
 
           <div class="game-grid">
@@ -44,6 +44,16 @@
               </span>
               <span class="card-record">Best run <b id="linear-best-home">0</b></span>
               <span class="card-arrow">Start run →</span>
+            </button>
+
+            <button class="game-card makes-card" type="button" data-start-game="what-makes">
+              <span class="card-icon">⚄ ? ⚂</span>
+              <span class="card-copy">
+                <strong>What Makes _</strong>
+                <small>Change only the symbols to make the top three dice equal the bottom two.</small>
+              </span>
+              <span class="card-record"><b id="makes-solved-home">0</b> puzzles solved</span>
+              <span class="card-arrow">Make it equal →</span>
             </button>
           </div>
 
@@ -128,6 +138,50 @@
         </div>
       </section>
 
+      <section id="what-makes-screen" class="screen">
+        <div class="makes-shell">
+          <div class="game-status">
+            <button class="back-button" type="button" data-go-home>← Games</button>
+            <div class="status-item"><span>Session</span><strong id="makes-score">0</strong></div>
+            <div class="status-item"><span>Total solved</span><strong id="makes-total">0</strong></div>
+            <div class="status-item"><span>Best session</span><strong id="makes-best">0</strong></div>
+          </div>
+
+          <article class="makes-card-panel">
+            <p class="eyebrow">What Makes _</p>
+            <h1>Make both sides equal.</h1>
+            <p class="makes-help">Tap each symbol to change it. The top side is calculated left-to-right.</p>
+
+            <div class="dice-equation" aria-label="Dice equation builder">
+              <div class="equation-row">
+                <span class="paren">(</span>
+                <span id="makes-die-a" class="die">1</span>
+                <button class="operator-button" type="button" data-operator-slot="0" aria-label="Change first operator">+</button>
+                <span id="makes-die-b" class="die">2</span>
+                <span class="paren">)</span>
+                <button class="operator-button" type="button" data-operator-slot="1" aria-label="Change second operator">+</button>
+                <span id="makes-die-c" class="die">3</span>
+              </div>
+              <span class="equals">=</span>
+              <div class="equation-row">
+                <span id="makes-die-d" class="die">4</span>
+                <button class="operator-button" type="button" data-operator-slot="2" aria-label="Change third operator">+</button>
+                <span id="makes-die-e" class="die">5</span>
+              </div>
+            </div>
+
+            <p id="makes-values" class="makes-values" aria-live="polite"></p>
+            <p id="makes-feedback" class="makes-feedback" aria-live="polite">Every puzzle has at least one solution.</p>
+
+            <div class="makes-actions">
+              <button id="makes-new" class="secondary-button" type="button">New Puzzle</button>
+              <button id="makes-hint" class="secondary-button" type="button">Show Hint</button>
+              <button id="makes-check" class="primary-button" type="button">Check Equation</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
       <section id="result-screen" class="screen result-screen">
         <div class="result-icon">✓</div>
         <p id="result-eyebrow" class="eyebrow">Run complete</p>
@@ -160,6 +214,6 @@
       </div>
     </div>
 
-    <script src="script.js?v=20260608-math-practice"></script>
+    <script src="script.js?v=20260610-what-makes"></script>
   </body>
 </html>
