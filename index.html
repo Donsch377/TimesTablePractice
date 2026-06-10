@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#172126">
     <title>Math Practice</title>
-    <link rel="stylesheet" href="styles.css?v=20260610-multiply-factor">
+    <link rel="stylesheet" href="styles.css?v=20260610-written-answers">
   </head>
   <body>
     <header class="topbar">
@@ -13,7 +13,7 @@
         <span class="brand-mark">M</span>
         <span>Math Practice</span>
       </button>
-      <div class="topbar-record"><span>Best run</span> <strong id="header-best">0</strong></div>
+      <div class="topbar-record"><span>Total correct</span> <strong id="header-total">0</strong></div>
     </header>
 
     <main>
@@ -144,6 +144,35 @@
             <h2 id="linear-question-prompt"></h2>
             <p id="linear-question-help" class="question-help"></p>
             <div id="linear-answers" class="linear-answers"></div>
+            <form id="written-answer-form" class="written-answer" autocomplete="off" hidden>
+              <label for="written-answer-input">Write your answer</label>
+              <div class="written-answer-row">
+                <input id="written-answer-input" type="text" inputmode="none" enterkeyhint="done" autocapitalize="off" autocomplete="off" spellcheck="false" aria-describedby="written-answer-hint">
+                <button class="primary-button" type="submit">Submit</button>
+              </div>
+              <p id="written-answer-hint">Use the keypad or your keyboard. Spaces do not matter.</p>
+              <div class="math-keyboard" aria-label="Math answer keyboard">
+                <button type="button" data-math-key="x">x</button>
+                <button type="button" data-math-key="y">y</button>
+                <button type="button" data-math-key="²">x²</button>
+                <button type="button" data-math-key="+">+</button>
+                <button type="button" data-math-key="−">−</button>
+                <button type="button" data-math-key="(">(</button>
+                <button type="button" data-math-key=")">)</button>
+                <button type="button" data-math-key="7">7</button>
+                <button type="button" data-math-key="8">8</button>
+                <button type="button" data-math-key="9">9</button>
+                <button type="button" data-math-key="4">4</button>
+                <button type="button" data-math-key="5">5</button>
+                <button type="button" data-math-key="6">6</button>
+                <button type="button" data-math-key="1">1</button>
+                <button type="button" data-math-key="2">2</button>
+                <button type="button" data-math-key="3">3</button>
+                <button type="button" data-math-key="0">0</button>
+                <button class="keyboard-wide" type="button" data-math-action="backspace" aria-label="Delete last character">Delete</button>
+                <button class="keyboard-wide" type="button" data-math-action="clear">Clear</button>
+              </div>
+            </form>
           </article>
         </div>
       </section>
@@ -224,6 +253,6 @@
       </div>
     </div>
 
-    <script src="script.js?v=20260610-multiply-factor"></script>
+    <script src="script.js?v=20260610-written-answers"></script>
   </body>
 </html>

@@ -279,6 +279,43 @@ textarea {
 .linear-answer.correct { border-color: #16a34a; background: #dcfce7; color: #166534; }
 .linear-answer.incorrect { border-color: var(--coral); background: #fee2e2; color: #991b1b; }
 .linear-answer:disabled { cursor: default; }
+.written-answer { display: grid; gap: 0.7rem; }
+.written-answer[hidden] { display: none; }
+.written-answer label { font-size: 0.82rem; font-weight: 900; }
+.written-answer-row { display: grid; grid-template-columns: 1fr auto; gap: 0.6rem; }
+.written-answer-row input {
+  width: 100%;
+  min-width: 0;
+  min-height: 3.2rem;
+  padding: 0.65rem 0.85rem;
+  border: 2px solid #aeb9bf;
+  border-radius: 0.7rem;
+  background: white;
+  color: var(--ink);
+  font-size: 1.25rem;
+  font-weight: 850;
+}
+.written-answer-row input:focus { border-color: var(--blue); outline: 3px solid rgba(45, 108, 223, 0.15); }
+.written-answer-row input.correct { border-color: var(--green); background: #dcfce7; }
+.written-answer-row input.incorrect { border-color: var(--coral); background: #fee2e2; }
+.written-answer p { margin: -0.25rem 0 0; color: var(--muted); font-size: 0.78rem; }
+.math-keyboard {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.42rem;
+}
+.math-keyboard button {
+  min-height: 2.8rem;
+  padding: 0.45rem;
+  border: 1px solid #cbd2d6;
+  border-radius: 0.6rem;
+  background: #f8fafb;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 900;
+}
+.math-keyboard button:hover { border-color: var(--ink); background: white; }
+.math-keyboard .keyboard-wide { grid-column: span 2; font-size: 0.78rem; }
 
 .makes-shell {
   width: min(72rem, calc(100% - 2rem));
@@ -405,5 +442,8 @@ textarea {
   .cell { border-radius: 0.2rem; font-size: clamp(0.42rem, 1.9vw, 0.62rem); }
   .linear-answers { grid-template-columns: 1fr; }
   .linear-question-card { min-height: 0; padding: 1.2rem; border-radius: 1rem; }
+  .written-answer-row { grid-template-columns: 1fr; }
+  .math-keyboard { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .math-keyboard button { min-height: 3rem; }
   .status-item span { display: none; }
 }

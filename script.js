@@ -2,6 +2,7 @@ const SAVE_KEY = "math-practice-save-v2";
 const LEGACY_TIMES_KEY = "times-table-practice-progress-v1";
 const TIMES_SECONDS = 10;
 const LINEAR_SECONDS = 30;
+const WRITTEN_SECONDS = 45;
 const CHECKPOINT_SIZE = 10;
 const FACTORS = Array.from({ length: 12 }, (_, index) => index + 1);
 
@@ -14,7 +15,7 @@ const screens = {
 };
 
 const els = {
-  headerBest: document.querySelector("#header-best"),
+  headerTotal: document.querySelector("#header-total"),
   timesMasteredHome: document.querySelector("#times-mastered-home"),
   linearBestHome: document.querySelector("#linear-best-home"),
   factorBestHome: document.querySelector("#factor-best-home"),
@@ -39,6 +40,10 @@ const els = {
   linearPrompt: document.querySelector("#linear-question-prompt"),
   linearHelp: document.querySelector("#linear-question-help"),
   linearAnswers: document.querySelector("#linear-answers"),
+  writtenForm: document.querySelector("#written-answer-form"),
+  writtenInput: document.querySelector("#written-answer-input"),
+  mathKeys: [...document.querySelectorAll("[data-math-key]")],
+  mathActions: [...document.querySelectorAll("[data-math-action]")],
   makesScore: document.querySelector("#makes-score"),
   makesTotal: document.querySelector("#makes-total"),
   makesBest: document.querySelector("#makes-best"),
@@ -87,6 +92,7 @@ let linearTimerId = null;
 let linearQuestionDeck = [];
 let linearSeenPrompts = new Set();
 let activeLinearGame = "linear";
+let linearQuestionSeconds = LINEAR_SECONDS;
 
 const MATH_OPERATORS = ["+", "−", "×", "÷"];
 const MAKES_GROUPINGS = ["left", "right", "standard"];
@@ -206,12 +212,11 @@ function updateRecords() {
   els.linearBestHome.textContent = save.games.linear.highScore;
   els.factorBestHome.textContent = save.games.multiplyFactor.highScore;
   els.makesSolvedHome.textContent = save.games.whatMakes.totalSolved;
-  els.headerBest.textContent = Math.max(
-    save.games.times.highStreak,
-    save.games.linear.highScore,
-    save.games.multiplyFactor.highScore,
-    save.games.whatMakes.bestSession
-  );
+  els.headerTotal.textContent =
+    save.games.times.totalCorrect
+    + save.games.linear.totalCorrect
+    + save.games.multiplyFactor.totalCorrect
+    + save.games.whatMakes.totalSolved;
   els.timesCompleted.textContent = timesCompleted.size;
   els.timesStreak.textContent = save.games.times.highStreak;
   els.linearBest.textContent = save.games[activeLinearGame].highScore;
@@ -282,10 +287,6 @@ function startTimesSession() {
   stopConfetti();
   els.victory.classList.remove("show");
 
-  if (timesCompleted.size === timesProblems.length) {
-    completeTimesTable();
-    return;
-  }
   if (!timesRunning) save.games.times.sessions += 1;
   timesRunning = true;
   timesStreak = 0;
@@ -298,11 +299,8 @@ function startTimesSession() {
 function nextTimesProblem() {
   clearTimeout(timesTimerId);
   const remaining = timesProblems.filter((problem) => !timesCompleted.has(problem.key));
-  if (!remaining.length) {
-    completeTimesTable();
-    return;
-  }
-  timesCurrent = remaining[Math.floor(Math.random() * remaining.length)];
+  const pool = remaining.length ? remaining : timesProblems;
+  timesCurrent = pool[Math.floor(Math.random() * pool.length)];
   els.timesQuestion.textContent = `${timesCurrent.left} × ${timesCurrent.right}`;
   els.timesFeedback.className = "feedback";
   els.timesFeedback.textContent = "Type the answer. You have 10 seconds.";
@@ -338,6 +336,7 @@ function submitTimesAnswer(event) {
   }
 
   clearTimeout(timesTimerId);
+  const completedBeforeAnswer = timesCompleted.size;
   timesCompleted.add(timesCurrent.key);
   timesStreak += 1;
   save.games.times.totalCorrect += 1;
@@ -348,6 +347,10 @@ function submitTimesAnswer(event) {
   els.timesFeedback.textContent = "Correct.";
   persistSave();
   updateBoard();
+  if (completedBeforeAnswer < timesProblems.length && timesCompleted.size === timesProblems.length) {
+    completeTimesTable();
+    return;
+  }
   timesNextId = window.setTimeout(nextTimesProblem, 450);
 }
 
@@ -869,12 +872,34 @@ function updateLinearScore() {
   els.linearBest.textContent = save.games[activeLinearGame].highScore;
 }
 
+function supportsWrittenAnswer(answer) {
+  return /^[0-9xy²+− ()]+$/u.test(answer);
+}
+
+function shouldUseWrittenAnswer(question) {
+  return linearScore >= CHECKPOINT_SIZE
+    && (linearScore - CHECKPOINT_SIZE) % 2 === 0
+    && supportsWrittenAnswer(question.answer);
+}
+
 function nextLinearQuestion() {
   linearCurrent = nextUniqueLinearQuestion();
+  linearCurrent.written = shouldUseWrittenAnswer(linearCurrent);
+  linearQuestionSeconds = linearCurrent.written ? WRITTEN_SECONDS : LINEAR_SECONDS;
   els.linearType.textContent = linearCurrent.type;
   els.linearPrompt.textContent = linearCurrent.prompt;
-  els.linearHelp.textContent = linearCurrent.help;
+  els.linearHelp.textContent = linearCurrent.written
+    ? `${linearCurrent.help} Write the simplified answer.`
+    : linearCurrent.help;
   els.linearAnswers.innerHTML = "";
+  els.linearAnswers.hidden = linearCurrent.written;
+  els.writtenForm.hidden = !linearCurrent.written;
+  els.writtenInput.value = "";
+  els.writtenInput.className = "";
+  els.writtenInput.disabled = false;
+  if (linearCurrent.written) {
+    els.writtenInput.focus({ preventScroll: true });
+  }
   linearCurrent.choices.forEach((answer, index) => {
     const button = document.createElement("button");
     button.className = "linear-answer";
@@ -890,7 +915,7 @@ function nextLinearQuestion() {
 function startLinearTimer() {
   stopLinearTimer();
   linearAccepting = true;
-  linearTimeLeft = LINEAR_SECONDS;
+  linearTimeLeft = linearQuestionSeconds;
   paintLinearTimer();
   linearTimerId = window.setInterval(() => {
     linearTimeLeft -= 1;
@@ -906,8 +931,20 @@ function stopLinearTimer() {
 
 function paintLinearTimer() {
   els.linearTimerText.textContent = linearTimeLeft;
-  els.linearTimer.style.width = `${(linearTimeLeft / LINEAR_SECONDS) * 100}%`;
+  els.linearTimer.style.width = `${(linearTimeLeft / linearQuestionSeconds) * 100}%`;
   els.linearTimer.style.backgroundColor = linearTimeLeft <= 8 ? "var(--coral)" : "var(--gold)";
+}
+
+function recordCorrectLinearAnswer() {
+  linearScore += 1;
+  save.games[activeLinearGame].totalCorrect += 1;
+  save.games[activeLinearGame].highScore = Math.max(save.games[activeLinearGame].highScore, linearScore);
+  persistSave();
+  updateLinearScore();
+  window.setTimeout(() => {
+    if (linearScore % CHECKPOINT_SIZE === 0) showLinearCheckpoint();
+    else nextLinearQuestion();
+  }, 500);
 }
 
 function answerLinearQuestion(answer, selectedButton) {
@@ -923,15 +960,55 @@ function answerLinearQuestion(answer, selectedButton) {
     window.setTimeout(() => finishLinearRun("incorrect"), 900);
     return;
   }
-  linearScore += 1;
-  save.games[activeLinearGame].totalCorrect += 1;
-  save.games[activeLinearGame].highScore = Math.max(save.games[activeLinearGame].highScore, linearScore);
-  persistSave();
-  updateLinearScore();
-  window.setTimeout(() => {
-    if (linearScore % CHECKPOINT_SIZE === 0) showLinearCheckpoint();
-    else nextLinearQuestion();
-  }, 500);
+  recordCorrectLinearAnswer();
+}
+
+function normalizeWrittenAnswer(answer) {
+  return answer
+    .toLowerCase()
+    .replace(/\s/g, "")
+    .replaceAll("−", "-")
+    .replaceAll("–", "-")
+    .replaceAll("*", "")
+    .replaceAll("**2", "²")
+    .replaceAll("^2", "²")
+    .replace(/([xy])2/g, "$1²");
+}
+
+function submitWrittenAnswer(event) {
+  event.preventDefault();
+  if (!linearAccepting || !linearCurrent?.written || !els.writtenInput.value.trim()) return;
+  linearAccepting = false;
+  stopLinearTimer();
+  els.writtenInput.disabled = true;
+  const correct = normalizeWrittenAnswer(els.writtenInput.value) === normalizeWrittenAnswer(linearCurrent.answer);
+  els.writtenInput.classList.add(correct ? "correct" : "incorrect");
+  if (!correct) {
+    window.setTimeout(() => finishLinearRun("incorrect"), 900);
+    return;
+  }
+  recordCorrectLinearAnswer();
+}
+
+function insertMathKey(value) {
+  if (!linearAccepting || !linearCurrent?.written) return;
+  const start = els.writtenInput.selectionStart ?? els.writtenInput.value.length;
+  const end = els.writtenInput.selectionEnd ?? start;
+  els.writtenInput.setRangeText(value, start, end, "end");
+  els.writtenInput.focus({ preventScroll: true });
+}
+
+function handleMathAction(action) {
+  if (!linearAccepting || !linearCurrent?.written) return;
+  if (action === "clear") {
+    els.writtenInput.value = "";
+  } else {
+    const start = els.writtenInput.selectionStart ?? els.writtenInput.value.length;
+    const end = els.writtenInput.selectionEnd ?? start;
+    if (start !== end) els.writtenInput.setRangeText("", start, end, "end");
+    else if (start > 0) els.writtenInput.setRangeText("", start - 1, start, "end");
+  }
+  els.writtenInput.focus({ preventScroll: true });
 }
 
 function showLinearCheckpoint() {
@@ -1196,6 +1273,13 @@ document.querySelector("#play-linear-again").addEventListener("click", startLine
 document.querySelector("#continue-linear").addEventListener("click", () => {
   els.checkpointModal.hidden = true;
   nextLinearQuestion();
+});
+els.writtenForm.addEventListener("submit", submitWrittenAnswer);
+els.mathKeys.forEach((button) => {
+  button.addEventListener("click", () => insertMathKey(button.dataset.mathKey));
+});
+els.mathActions.forEach((button) => {
+  button.addEventListener("click", () => handleMathAction(button.dataset.mathAction));
 });
 els.makesOperators.forEach((button) => {
   button.addEventListener("click", () => cycleMakesOperator(Number(button.dataset.operatorSlot)));
