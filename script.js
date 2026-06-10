@@ -17,6 +17,7 @@ const els = {
   headerBest: document.querySelector("#header-best"),
   timesMasteredHome: document.querySelector("#times-mastered-home"),
   linearBestHome: document.querySelector("#linear-best-home"),
+  factorBestHome: document.querySelector("#factor-best-home"),
   makesSolvedHome: document.querySelector("#makes-solved-home"),
   saveCode: document.querySelector("#save-code"),
   saveMessage: document.querySelector("#save-message"),
@@ -85,6 +86,7 @@ let linearTimeLeft = LINEAR_SECONDS;
 let linearTimerId = null;
 let linearQuestionDeck = [];
 let linearSeenPrompts = new Set();
+let activeLinearGame = "linear";
 
 const MATH_OPERATORS = ["+", "−", "×", "÷"];
 const MAKES_GROUPINGS = ["left", "right", "standard"];
@@ -104,6 +106,7 @@ function defaultSave() {
     games: {
       times: { mastered: [], highStreak: 0, totalCorrect: 0, sessions: 0 },
       linear: { highScore: 0, totalCorrect: 0, runs: 0, checkpoints: 0 },
+      multiplyFactor: { highScore: 0, totalCorrect: 0, runs: 0, checkpoints: 0 },
       whatMakes: { totalSolved: 0, bestSession: 0, sessions: 0 },
     },
   };
@@ -128,6 +131,14 @@ function normalizeSave(candidate) {
     totalCorrect: positiveNumber(linear.totalCorrect),
     runs: positiveNumber(linear.runs),
     checkpoints: positiveNumber(linear.checkpoints),
+  };
+
+  const multiplyFactor = candidate.games?.multiplyFactor || {};
+  normalized.games.multiplyFactor = {
+    highScore: positiveNumber(multiplyFactor.highScore),
+    totalCorrect: positiveNumber(multiplyFactor.totalCorrect),
+    runs: positiveNumber(multiplyFactor.runs),
+    checkpoints: positiveNumber(multiplyFactor.checkpoints),
   };
 
   const whatMakes = candidate.games?.whatMakes || {};
@@ -193,15 +204,17 @@ function decodeSave(code) {
 function updateRecords() {
   els.timesMasteredHome.textContent = timesCompleted.size;
   els.linearBestHome.textContent = save.games.linear.highScore;
+  els.factorBestHome.textContent = save.games.multiplyFactor.highScore;
   els.makesSolvedHome.textContent = save.games.whatMakes.totalSolved;
   els.headerBest.textContent = Math.max(
     save.games.times.highStreak,
     save.games.linear.highScore,
+    save.games.multiplyFactor.highScore,
     save.games.whatMakes.bestSession
   );
   els.timesCompleted.textContent = timesCompleted.size;
   els.timesStreak.textContent = save.games.times.highStreak;
-  els.linearBest.textContent = save.games.linear.highScore;
+  els.linearBest.textContent = save.games[activeLinearGame].highScore;
   els.makesScore.textContent = makesSessionScore;
   els.makesTotal.textContent = save.games.whatMakes.totalSolved;
   els.makesBest.textContent = save.games.whatMakes.bestSession;
@@ -515,6 +528,90 @@ function makeLinearCheckQuestion() {
   };
 }
 
+function quadraticExpression(quadratic = 0, linear = 0, constant = 0) {
+  const terms = [];
+  if (quadratic) terms.push([quadratic, "x²"]);
+  if (linear) terms.push([linear, "x"]);
+  if (constant) terms.push([constant, ""]);
+  if (!terms.length) return "0";
+  return terms.map(([coefficient, variable], index) => formatTerm(coefficient, variable, index === 0)).join("");
+}
+
+function makeMonomialExpansionQuestion() {
+  const outside = randomInt(2, 9) * (Math.random() < 0.25 ? -1 : 1);
+  const insideX = randomInt(2, 7);
+  const insideConstant = randomInt(-7, 7) || 3;
+  const outsideHasX = Math.random() < 0.65;
+  const outsideText = `${outside < 0 ? "−" : ""}${Math.abs(outside)}${outsideHasX ? "x" : ""}`;
+  const insideText = expression(insideX, 0, insideConstant);
+  const answer = outsideHasX
+    ? quadraticExpression(outside * insideX, outside * insideConstant)
+    : expression(outside * insideX, 0, outside * insideConstant);
+  const missedSecondTerm = outsideHasX
+    ? quadraticExpression(outside * insideX, insideConstant)
+    : expression(outside * insideX, 0, insideConstant);
+  return {
+    type: "Multiply and expand",
+    prompt: `Multiply/expand:\n${outsideText}(${insideText})`,
+    help: `Multiply ${outsideText} by both terms inside the parentheses.`,
+    answer,
+    choices: choices(answer, [
+      missedSecondTerm,
+      outsideHasX
+        ? quadraticExpression(outside * insideX, -outside * insideConstant)
+        : expression(outside * insideX, 0, -outside * insideConstant),
+      outsideHasX
+        ? quadraticExpression(outside + insideX, outside + insideConstant)
+        : expression(outside + insideX, 0, outside + insideConstant),
+    ]),
+  };
+}
+
+function makeBinomialExpansionQuestion() {
+  const firstConstant = randomInt(-6, 6) || 2;
+  const secondX = randomInt(2, 6) * (Math.random() < 0.3 ? -1 : 1);
+  const secondConstant = randomInt(-6, 6) || -1;
+  const answer = quadraticExpression(
+    secondX,
+    secondConstant + firstConstant * secondX,
+    firstConstant * secondConstant
+  );
+  return {
+    type: "Multiply binomials",
+    prompt: `Multiply:\n(${expression(1, 0, firstConstant)})(${expression(secondX, 0, secondConstant)})`,
+    help: "Multiply every term in the first binomial by every term in the second.",
+    answer,
+    choices: choices(answer, [
+      quadraticExpression(secondX, secondConstant + firstConstant, firstConstant * secondConstant),
+      quadraticExpression(-secondX, secondConstant + firstConstant * secondX, firstConstant * secondConstant),
+      quadraticExpression(secondX, secondConstant + firstConstant * secondX, -firstConstant * secondConstant),
+    ]),
+  };
+}
+
+function makeFactorQuestion() {
+  const commonFactor = randomInt(2, 9);
+  let insideX = randomInt(1, 7);
+  let insideConstant = randomInt(-7, 7) || 2;
+  while (greatestCommonDivisor(insideX, insideConstant) !== 1) {
+    insideX = randomInt(1, 7);
+    insideConstant = randomInt(-7, 7) || 2;
+  }
+  const expanded = expression(commonFactor * insideX, 0, commonFactor * insideConstant);
+  const answer = `${commonFactor}(${expression(insideX, 0, insideConstant)})`;
+  return {
+    type: "Factor using the GCF",
+    prompt: `Factor completely:\n${expanded}`,
+    help: "Find the greatest number that divides both coefficients.",
+    answer,
+    choices: choices(answer, [
+      `${insideX}(${expression(commonFactor, 0, insideConstant)})`,
+      `${commonFactor}(${expression(insideX, 0, commonFactor * insideConstant)})`,
+      `${commonFactor * insideX}(x${formatTerm(insideConstant, "", false)})`,
+    ]),
+  };
+}
+
 const EASY_LINEAR_QUESTIONS = [
   {
     type: "Combine like terms",
@@ -647,20 +744,97 @@ const CURATED_LINEAR_QUESTIONS = [
   },
 ];
 
+const MULTIPLY_FACTOR_QUESTIONS = [
+  {
+    type: "Multiply and expand",
+    prompt: "Multiply/expand:\n10(x + 5)",
+    help: "Multiply both terms inside the parentheses by 10.",
+    answer: "10x + 50",
+    choices: ["15x + 50", "50x + 15", "10x + 50", "10x + 15"],
+  },
+  {
+    type: "Multiply and expand",
+    prompt: "Multiply/expand:\n7x(2x + 3)",
+    help: "Multiply 7x by both terms inside the parentheses.",
+    answer: "14x² + 21x",
+    choices: ["14x² + 21x", "14x + 21", "9x² + 10x", "14x² + 3"],
+  },
+  {
+    type: "Multiply and expand",
+    prompt: "Multiply/expand:\n−2x(−6x − 5)",
+    help: "A negative times a negative is positive.",
+    answer: "12x² + 10x",
+    choices: ["12x² + 10x", "−12x² − 10x", "12x² − 10x", "8x² + 7x"],
+  },
+  {
+    type: "Multiply and expand",
+    prompt: "Multiply/expand:\n2(x + 3)",
+    help: "Multiply both terms inside the parentheses by 2.",
+    answer: "2x + 6",
+    choices: ["8x + 6", "2x + 6", "2x + 8", "2x + 5"],
+  },
+  {
+    type: "Multiply and expand",
+    prompt: "Multiply/expand:\n9x(2x − 5)",
+    help: "Multiply 9x by both terms inside the parentheses.",
+    answer: "18x² − 45x",
+    choices: ["18x + 45", "18x² − 45", "18x² + 14x", "18x² − 45x"],
+  },
+  {
+    type: "Distribute",
+    prompt: "Distribute:\n3x(5x − 6)",
+    help: "Multiply 3x by both terms.",
+    answer: "15x² − 18x",
+    choices: ["8x² + 18x", "15x² − 9x", "15x² + 18", "15x² − 18x"],
+  },
+  {
+    type: "Multiply binomials",
+    prompt: "Multiply:\n(x − 5)(−4x + 2)",
+    help: "Multiply every term in the first binomial by every term in the second.",
+    answer: "−4x² + 22x − 10",
+    choices: ["4x² + 22x − 10", "−4x² + 18x − 10", "−4x² + 22x − 10", "−4x² + 22x + 10"],
+  },
+  {
+    type: "Multiply and expand",
+    prompt: "Multiply/expand:\n12(3x − 2)",
+    help: "Multiply both terms inside the parentheses by 12.",
+    answer: "36x − 24",
+    choices: ["36x − 24", "15x − 24", "15x + 24", "36x + 24"],
+  },
+  {
+    type: "Multiply binomials",
+    prompt: "Multiply:\n(x + 2)(x − 1)",
+    help: "Multiply every term in the first binomial by every term in the second.",
+    answer: "x² + x − 2",
+    choices: ["x² − x − 2", "x + x − 2", "x² + x − 2", "x² + 2x − 2"],
+  },
+  {
+    type: "Factor using the GCF",
+    prompt: "Factor completely:\n10x + 50",
+    help: "Find the greatest number that divides both coefficients.",
+    answer: "10(x + 5)",
+    choices: ["10(x + 5)", "5(x + 10)", "10(x + 50)", "2(5x + 5)"],
+  },
+];
+
 function cloneQuestion(question) {
   return { ...question, choices: shuffle(question.choices) };
 }
 
 function buildLinearQuestionDeck() {
   linearSeenPrompts = new Set();
-  linearQuestionDeck = [
-    ...shuffle(EASY_LINEAR_QUESTIONS).map(cloneQuestion),
-    ...shuffle(CURATED_LINEAR_QUESTIONS).map(cloneQuestion),
-  ];
+  linearQuestionDeck = activeLinearGame === "multiplyFactor"
+    ? shuffle(MULTIPLY_FACTOR_QUESTIONS).map(cloneQuestion)
+    : [
+        ...shuffle(EASY_LINEAR_QUESTIONS).map(cloneQuestion),
+        ...shuffle(CURATED_LINEAR_QUESTIONS).map(cloneQuestion),
+      ];
 }
 
 function makeUniqueGeneratedLinearQuestion() {
-  const makers = [makeAddQuestion, makeSubtractQuestion, makeCombineQuestion, makeDistributeQuestion, makeLinearCheckQuestion];
+  const makers = activeLinearGame === "multiplyFactor"
+    ? [makeMonomialExpansionQuestion, makeBinomialExpansionQuestion, makeFactorQuestion]
+    : [makeAddQuestion, makeSubtractQuestion, makeCombineQuestion, makeDistributeQuestion, makeLinearCheckQuestion];
   for (let attempt = 0; attempt < 500; attempt += 1) {
     const question = makers[randomInt(0, makers.length - 1)]();
     if (!linearSeenPrompts.has(question.prompt)) return question;
@@ -676,12 +850,13 @@ function nextUniqueLinearQuestion() {
   return question;
 }
 
-function startLinearRun() {
+function startLinearRun(game = activeLinearGame) {
   stopTimesSession();
+  activeLinearGame = game;
   showScreen("linear");
   linearScore = 0;
   buildLinearQuestionDeck();
-  save.games.linear.runs += 1;
+  save.games[activeLinearGame].runs += 1;
   persistSave();
   updateLinearScore();
   nextLinearQuestion();
@@ -691,7 +866,7 @@ function updateLinearScore() {
   els.linearScore.textContent = linearScore;
   els.linearCheckpointCount.textContent = CHECKPOINT_SIZE - (linearScore % CHECKPOINT_SIZE || 0);
   if (linearScore > 0 && linearScore % CHECKPOINT_SIZE === 0) els.linearCheckpointCount.textContent = CHECKPOINT_SIZE;
-  els.linearBest.textContent = save.games.linear.highScore;
+  els.linearBest.textContent = save.games[activeLinearGame].highScore;
 }
 
 function nextLinearQuestion() {
@@ -749,8 +924,8 @@ function answerLinearQuestion(answer, selectedButton) {
     return;
   }
   linearScore += 1;
-  save.games.linear.totalCorrect += 1;
-  save.games.linear.highScore = Math.max(save.games.linear.highScore, linearScore);
+  save.games[activeLinearGame].totalCorrect += 1;
+  save.games[activeLinearGame].highScore = Math.max(save.games[activeLinearGame].highScore, linearScore);
   persistSave();
   updateLinearScore();
   window.setTimeout(() => {
@@ -760,7 +935,7 @@ function answerLinearQuestion(answer, selectedButton) {
 }
 
 function showLinearCheckpoint() {
-  save.games.linear.checkpoints += 1;
+  save.games[activeLinearGame].checkpoints += 1;
   persistSave();
   els.checkpointNumber.textContent = linearScore;
   els.checkpointModal.hidden = false;
@@ -770,9 +945,9 @@ function finishLinearRun(reason) {
   if (!linearCurrent) return;
   stopLinearTimer();
   linearAccepting = false;
-  save.games.linear.highScore = Math.max(save.games.linear.highScore, linearScore);
+  save.games[activeLinearGame].highScore = Math.max(save.games[activeLinearGame].highScore, linearScore);
   persistSave();
-  els.resultEyebrow.textContent = linearScore === save.games.linear.highScore && linearScore > 0 ? "Best run" : "Run complete";
+  els.resultEyebrow.textContent = linearScore === save.games[activeLinearGame].highScore && linearScore > 0 ? "Best run" : "Run complete";
   els.resultTitle.textContent = reason === "timeout" ? "Time's up" : reason === "quit" ? "Run ended" : "Keep building";
   els.resultCopy.textContent = reason === "quit"
     ? "Your records and progress are saved."
@@ -1007,7 +1182,9 @@ function stopConfetti() {
 document.querySelectorAll("[data-start-game]").forEach((button) => {
   button.addEventListener("click", () => {
     if (button.dataset.startGame === "times") startTimesSession();
-    else if (button.dataset.startGame === "linear") startLinearRun();
+    else if (button.dataset.startGame === "linear" || button.dataset.startGame === "multiplyFactor") {
+      startLinearRun(button.dataset.startGame);
+    }
     else startMakesSession();
   });
 });

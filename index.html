@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#172126">
     <title>Math Practice</title>
-    <link rel="stylesheet" href="styles.css?v=20260610-what-makes">
+    <link rel="stylesheet" href="styles.css?v=20260610-multiply-factor">
   </head>
   <body>
     <header class="topbar">
@@ -22,7 +22,7 @@
           <div class="hero">
             <p class="eyebrow">Choose your practice</p>
             <h1>What do you want to work on?</h1>
-            <p>Build multiplication mastery, simplify linear expressions, or make dice equations balance.</p>
+            <p>Build multiplication mastery, simplify expressions, expand and factor, or make dice equations balance.</p>
           </div>
 
           <div class="game-grid">
@@ -43,6 +43,16 @@
                 <small>Start easier, then add, subtract, distribute, and combine. Questions do not repeat during a run.</small>
               </span>
               <span class="card-record">Best run <b id="linear-best-home">0</b></span>
+              <span class="card-arrow">Start run →</span>
+            </button>
+
+            <button class="game-card factor-card" type="button" data-start-game="multiplyFactor">
+              <span class="card-icon">3x(x + 2)</span>
+              <span class="card-copy">
+                <strong>Multiplying &amp; Factoring Linear Expressions</strong>
+                <small>Distribute, multiply binomials, and factor expressions using a greatest common factor.</small>
+              </span>
+              <span class="card-record">Best run <b id="factor-best-home">0</b></span>
               <span class="card-arrow">Start run →</span>
             </button>
 
@@ -214,6 +224,6 @@
       </div>
     </div>
 
-    <script src="script.js?v=20260610-what-makes"></script>
+    <script src="script.js?v=20260610-multiply-factor"></script>
   </body>
 </html>

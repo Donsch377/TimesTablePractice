@@ -87,7 +87,7 @@ h1, h2, p { margin-top: 0; }
 }
 .hero p:not(.eyebrow), .result-copy { color: var(--muted); font-size: 1.08rem; line-height: 1.6; }
 
-.game-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
+.game-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.2rem; }
 .game-card {
   display: grid;
   min-height: 17rem;
@@ -102,6 +102,7 @@ h1, h2, p { margin-top: 0; }
 .game-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
 .times-card { background: #dff3ef; }
 .linear-card { background: #fff0d1; }
+.factor-card { background: #dfeeff; }
 .makes-card { background: #e9e2ff; }
 .card-icon {
   align-self: start;
