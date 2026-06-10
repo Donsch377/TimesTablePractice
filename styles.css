@@ -265,6 +265,7 @@ textarea {
 .linear-question-card h2 { margin-bottom: 0.6rem; font-size: clamp(1.55rem, 5vw, 2.55rem); line-height: 1.25; white-space: pre-line; }
 .question-help { min-height: 1.5rem; margin-bottom: 1.5rem; color: var(--muted); line-height: 1.5; }
 .linear-answers { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.7rem; }
+.linear-answers[hidden] { display: none; }
 .linear-answer {
   min-height: 4.4rem;
   padding: 0.8rem 1rem;

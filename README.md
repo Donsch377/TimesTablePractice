@@ -7,6 +7,7 @@ A GitHub Pages practice app with times tables, linear expressions, multiplying a
 - Choose a game from the first screen.
 - Times Tables uses typed answers and fills the 1-12 table over time.
 - Linear Expressions uses clear add, subtract, distribute, combine-like-terms, and recognition questions.
+- Recognition questions treat division by a constant such as `x / 4` as linear, while division by a variable such as `4 / x` is non-linear.
 - Linear runs begin with easier questions and never repeat a question during the same run.
 - Linear runs have a 30-second timer per question and a paused checkpoint every 10 correct answers.
 - After the first checkpoint, linear-expression runs mix in written answers with a math keypad and 45-second timer.

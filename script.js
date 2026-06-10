@@ -521,11 +521,11 @@ function makeDistributeQuestion() {
 
 function makeLinearCheckQuestion() {
   const nonlinear = shuffle(["x² + 3x + 1", "x + xy + 3", "4 ÷ x + 2", "√x + 5"])[0];
-  const linear = shuffle(["3x + 4", "x + y + 4", "5y + x", "2x − 7y + 1"]).slice(0, 3);
+  const linear = shuffle(["3x + 4", "x + y + 4", "5y + x", "2x − 7y + 1", "x ÷ 4", "y/3 + 2"]).slice(0, 3);
   return {
     type: "Recognize linear expressions",
     prompt: "Which expression is NOT linear?",
-    help: "A linear expression does not multiply variables together, divide by a variable, or use powers or roots of variables.",
+    help: "Dividing a variable by a constant is linear. Dividing by a variable, multiplying variables, powers, and roots are not linear.",
     answer: nonlinear,
     choices: shuffle([nonlinear, ...linear]),
   };
@@ -668,9 +668,9 @@ const EASY_LINEAR_QUESTIONS = [
   {
     type: "Recognize linear expressions",
     prompt: "Which expression is linear?",
-    help: "A linear expression has variables only to the first power.",
-    answer: "4x + 3",
-    choices: ["4x + 3", "x² + 3", "4 ÷ x", "xy + 3"],
+    help: "x ÷ 4 equals (1/4)x, so it is linear. Dividing by x is not linear.",
+    answer: "x ÷ 4",
+    choices: ["x ÷ 4", "x² + 3", "4 ÷ x", "xy + 3"],
   },
 ];
 
@@ -741,9 +741,9 @@ const CURATED_LINEAR_QUESTIONS = [
   {
     type: "Recognize linear expressions",
     prompt: "Which expression is NOT linear?",
-    help: "Multiplying x and y together makes an expression non-linear.",
+    help: "Multiplying x and y together makes an expression non-linear. A variable divided by a constant is still linear.",
     answer: "x + xy + 3",
-    choices: ["x + xy + 3", "3x + 4", "x + y + 4", "5y + x"],
+    choices: ["x + xy + 3", "3x + 4", "x ÷ 4", "5y + x"],
   },
 ];
 
@@ -899,16 +899,17 @@ function nextLinearQuestion() {
   els.writtenInput.disabled = false;
   if (linearCurrent.written) {
     els.writtenInput.focus({ preventScroll: true });
+  } else {
+    linearCurrent.choices.forEach((answer, index) => {
+      const button = document.createElement("button");
+      button.className = "linear-answer";
+      button.type = "button";
+      button.textContent = answer;
+      button.setAttribute("aria-label", `Answer ${String.fromCharCode(65 + index)}: ${answer}`);
+      button.addEventListener("click", () => answerLinearQuestion(answer, button));
+      els.linearAnswers.appendChild(button);
+    });
   }
-  linearCurrent.choices.forEach((answer, index) => {
-    const button = document.createElement("button");
-    button.className = "linear-answer";
-    button.type = "button";
-    button.textContent = answer;
-    button.setAttribute("aria-label", `Answer ${String.fromCharCode(65 + index)}: ${answer}`);
-    button.addEventListener("click", () => answerLinearQuestion(answer, button));
-    els.linearAnswers.appendChild(button);
-  });
   startLinearTimer();
 }
 
