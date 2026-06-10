@@ -41,7 +41,6 @@ const els = {
   makesScore: document.querySelector("#makes-score"),
   makesTotal: document.querySelector("#makes-total"),
   makesBest: document.querySelector("#makes-best"),
-  makesValues: document.querySelector("#makes-values"),
   makesFeedback: document.querySelector("#makes-feedback"),
   makesDice: [
     document.querySelector("#makes-die-a"),
@@ -51,6 +50,13 @@ const els = {
     document.querySelector("#makes-die-e"),
   ],
   makesOperators: [...document.querySelectorAll("[data-operator-slot]")],
+  makesBottomOperator: document.querySelector("#makes-bottom-operator"),
+  makesParens: {
+    leftOpen: document.querySelector("#makes-left-open"),
+    middleOpen: document.querySelector("#makes-middle-open"),
+    leftClose: document.querySelector("#makes-left-close"),
+    rightClose: document.querySelector("#makes-right-close"),
+  },
   checkpointModal: document.querySelector("#checkpoint-modal"),
   checkpointNumber: document.querySelector("#checkpoint-number"),
   resultEyebrow: document.querySelector("#result-eyebrow"),
@@ -81,9 +87,11 @@ let linearQuestionDeck = [];
 let linearSeenPrompts = new Set();
 
 const MATH_OPERATORS = ["+", "−", "×", "÷"];
+const MAKES_GROUPINGS = ["left", "right", "standard"];
 let makesCurrent = null;
-let makesSelectedOperators = [0, 0, 0];
+let makesSelectedOperators = [0, 0];
 let makesSessionScore = 0;
+let makesGroupingIndex = Math.floor(Math.random() * MAKES_GROUPINGS.length);
 
 let confettiId = null;
 let confettiPieces = [];
@@ -96,7 +104,7 @@ function defaultSave() {
     games: {
       times: { mastered: [], highStreak: 0, totalCorrect: 0, sessions: 0 },
       linear: { highScore: 0, totalCorrect: 0, runs: 0, checkpoints: 0 },
-      whatMakes: { totalSolved: 0, bestSession: 0, sessions: 0, hintsUsed: 0 },
+      whatMakes: { totalSolved: 0, bestSession: 0, sessions: 0 },
     },
   };
 }
@@ -127,7 +135,6 @@ function normalizeSave(candidate) {
     totalSolved: positiveNumber(whatMakes.totalSolved),
     bestSession: positiveNumber(whatMakes.bestSession),
     sessions: positiveNumber(whatMakes.sessions),
-    hintsUsed: positiveNumber(whatMakes.hintsUsed),
   };
   normalized.profile.createdAt = candidate.profile?.createdAt || normalized.profile.createdAt;
   return normalized;
@@ -814,11 +821,28 @@ function applyMathOperator(left, right, operatorIndex) {
   return fraction(left.numerator * right.denominator, left.denominator * right.numerator);
 }
 
-function evaluateMakesSides(dice, operators) {
-  const topFirst = applyMathOperator(fraction(dice[0]), fraction(dice[1]), operators[0]);
+function operatorPrecedence(operatorIndex) {
+  return operatorIndex >= 2 ? 2 : 1;
+}
+
+function evaluateMakesTop(dice, operators, grouping) {
+  const [firstOperator, secondOperator] = operators;
+  const first = fraction(dice[0]);
+  const second = fraction(dice[1]);
+  const third = fraction(dice[2]);
+  const useRightGrouping = grouping === "right"
+    || (grouping === "standard" && operatorPrecedence(secondOperator) > operatorPrecedence(firstOperator));
+
+  if (useRightGrouping) {
+    return applyMathOperator(first, applyMathOperator(second, third, secondOperator), firstOperator);
+  }
+  return applyMathOperator(applyMathOperator(first, second, firstOperator), third, secondOperator);
+}
+
+function evaluateMakesSides(puzzle, operators) {
   return {
-    left: applyMathOperator(topFirst, fraction(dice[2]), operators[1]),
-    right: applyMathOperator(fraction(dice[3]), fraction(dice[4]), operators[2]),
+    left: evaluateMakesTop(puzzle.dice, operators, puzzle.grouping),
+    right: applyMathOperator(fraction(puzzle.dice[3]), fraction(puzzle.dice[4]), puzzle.bottomOperator),
   };
 }
 
@@ -826,38 +850,53 @@ function fractionsEqual(left, right) {
   return Boolean(left && right && left.numerator === right.numerator && left.denominator === right.denominator);
 }
 
-function formatFraction(value) {
-  if (!value) return "undefined";
-  return value.denominator === 1 ? String(value.numerator) : `${value.numerator}/${value.denominator}`;
-}
-
-function findMakesSolutions(dice) {
+function findMakesSolutions(dice, bottomOperator, grouping) {
   const solutions = [];
   for (let first = 0; first < MATH_OPERATORS.length; first += 1) {
     for (let second = 0; second < MATH_OPERATORS.length; second += 1) {
-      for (let third = 0; third < MATH_OPERATORS.length; third += 1) {
-        const operators = [first, second, third];
-        const values = evaluateMakesSides(dice, operators);
-        if (fractionsEqual(values.left, values.right)) solutions.push(operators);
-      }
+      const operators = [first, second];
+      const puzzle = { dice, bottomOperator, grouping };
+      const values = evaluateMakesSides(puzzle, operators);
+      if (fractionsEqual(values.left, values.right)) solutions.push(operators);
     }
   }
   return solutions;
 }
 
 function generateMakesPuzzle() {
+  const grouping = MAKES_GROUPINGS[makesGroupingIndex];
   for (let attempt = 0; attempt < 1000; attempt += 1) {
     const dice = Array.from({ length: 5 }, () => randomInt(1, 6));
+    const bottomOperator = randomInt(0, MATH_OPERATORS.length - 1);
     if (makesCurrent?.dice.join(",") === dice.join(",")) continue;
-    const solutions = findMakesSolutions(dice);
-    if (solutions.length) return { dice, solutions, solved: false, hintShown: false };
+    const solutions = findMakesSolutions(dice, bottomOperator, grouping);
+    if (solutions.length) {
+      makesGroupingIndex = (makesGroupingIndex + 1) % MAKES_GROUPINGS.length;
+      return { dice, bottomOperator, grouping, solutions, solved: false };
+    }
   }
   const dice = [1, 2, 3, 2, 3];
-  return { dice, solutions: findMakesSolutions(dice), solved: false, hintShown: false };
+  const bottomOperator = 2;
+  const fallbackGrouping = "left";
+  makesGroupingIndex = (makesGroupingIndex + 1) % MAKES_GROUPINGS.length;
+  return {
+    dice,
+    bottomOperator,
+    grouping: fallbackGrouping,
+    solutions: findMakesSolutions(dice, bottomOperator, fallbackGrouping),
+    solved: false,
+  };
 }
 
-function formatMakesEquation(dice, operators) {
-  return `(${dice[0]} ${MATH_OPERATORS[operators[0]]} ${dice[1]}) ${MATH_OPERATORS[operators[1]]} ${dice[2]} = ${dice[3]} ${MATH_OPERATORS[operators[2]]} ${dice[4]}`;
+function formatMakesTop(dice, operators, grouping) {
+  const expression = `${dice[0]} ${MATH_OPERATORS[operators[0]]} ${dice[1]} ${MATH_OPERATORS[operators[1]]} ${dice[2]}`;
+  if (grouping === "left") {
+    return `(${dice[0]} ${MATH_OPERATORS[operators[0]]} ${dice[1]}) ${MATH_OPERATORS[operators[1]]} ${dice[2]}`;
+  }
+  if (grouping === "right") {
+    return `${dice[0]} ${MATH_OPERATORS[operators[0]]} (${dice[1]} ${MATH_OPERATORS[operators[1]]} ${dice[2]})`;
+  }
+  return expression;
 }
 
 function paintMakesPuzzle() {
@@ -867,14 +906,29 @@ function paintMakesPuzzle() {
   makesSelectedOperators.forEach((operator, index) => {
     els.makesOperators[index].textContent = MATH_OPERATORS[operator];
   });
-  const values = evaluateMakesSides(makesCurrent.dice, makesSelectedOperators);
-  els.makesValues.textContent = `${formatFraction(values.left)} = ${formatFraction(values.right)}`;
+  els.makesBottomOperator.textContent = MATH_OPERATORS[makesCurrent.bottomOperator];
+  els.makesParens.leftOpen.textContent = makesCurrent.grouping === "left" ? "(" : "";
+  els.makesParens.leftClose.textContent = makesCurrent.grouping === "left" ? ")" : "";
+  els.makesParens.middleOpen.textContent = makesCurrent.grouping === "right" ? "(" : "";
+  els.makesParens.rightClose.textContent = makesCurrent.grouping === "right" ? ")" : "";
   updateRecords();
+}
+
+function chooseUnsolvedMakesOperators(puzzle) {
+  const candidates = [];
+  for (let first = 0; first < MATH_OPERATORS.length; first += 1) {
+    for (let second = 0; second < MATH_OPERATORS.length; second += 1) {
+      const operators = [first, second];
+      const values = evaluateMakesSides(puzzle, operators);
+      if (!fractionsEqual(values.left, values.right)) candidates.push(operators);
+    }
+  }
+  return candidates[randomInt(0, candidates.length - 1)] || [0, 0];
 }
 
 function nextMakesPuzzle() {
   makesCurrent = generateMakesPuzzle();
-  makesSelectedOperators = [0, 0, 0];
+  makesSelectedOperators = chooseUnsolvedMakesOperators(makesCurrent);
   els.makesFeedback.className = "makes-feedback";
   els.makesFeedback.textContent = "Every puzzle has at least one solution.";
   paintMakesPuzzle();
@@ -898,32 +952,20 @@ function cycleMakesOperator(slot) {
 
 function checkMakesEquation() {
   if (!makesCurrent) return;
-  const values = evaluateMakesSides(makesCurrent.dice, makesSelectedOperators);
+  const values = evaluateMakesSides(makesCurrent, makesSelectedOperators);
   if (!fractionsEqual(values.left, values.right)) {
     els.makesFeedback.className = "makes-feedback wrong";
-    els.makesFeedback.textContent = `${formatFraction(values.left)} does not equal ${formatFraction(values.right)} yet.`;
+    els.makesFeedback.textContent = "Not equal yet. Try different top symbols.";
     return;
   }
 
   els.makesFeedback.className = "makes-feedback correct";
-  els.makesFeedback.textContent = `Correct: ${formatMakesEquation(makesCurrent.dice, makesSelectedOperators)}`;
+  els.makesFeedback.textContent = `Correct: ${formatMakesTop(makesCurrent.dice, makesSelectedOperators, makesCurrent.grouping)}`;
   if (makesCurrent.solved) return;
   makesCurrent.solved = true;
   makesSessionScore += 1;
   save.games.whatMakes.totalSolved += 1;
   save.games.whatMakes.bestSession = Math.max(save.games.whatMakes.bestSession, makesSessionScore);
-  persistSave();
-}
-
-function showMakesHint() {
-  if (!makesCurrent) return;
-  const solution = makesCurrent.solutions[0];
-  if (!makesCurrent.hintShown) {
-    makesCurrent.hintShown = true;
-    save.games.whatMakes.hintsUsed += 1;
-  }
-  els.makesFeedback.className = "makes-feedback";
-  els.makesFeedback.textContent = `Try: ${formatMakesEquation(makesCurrent.dice, solution)}`;
   persistSave();
 }
 
@@ -982,7 +1024,6 @@ els.makesOperators.forEach((button) => {
   button.addEventListener("click", () => cycleMakesOperator(Number(button.dataset.operatorSlot)));
 });
 document.querySelector("#makes-new").addEventListener("click", nextMakesPuzzle);
-document.querySelector("#makes-hint").addEventListener("click", showMakesHint);
 document.querySelector("#makes-check").addEventListener("click", checkMakesEquation);
 document.querySelector("#close-victory").addEventListener("click", () => {
   stopConfetti();

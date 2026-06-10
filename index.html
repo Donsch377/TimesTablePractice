@@ -50,7 +50,7 @@
               <span class="card-icon">⚄ ? ⚂</span>
               <span class="card-copy">
                 <strong>What Makes _</strong>
-                <small>Change only the symbols to make the top three dice equal the bottom two.</small>
+                <small>Change the two top symbols to match the fixed bottom expression.</small>
               </span>
               <span class="card-record"><b id="makes-solved-home">0</b> puzzles solved</span>
               <span class="card-arrow">Make it equal →</span>
@@ -150,32 +150,32 @@
           <article class="makes-card-panel">
             <p class="eyebrow">What Makes _</p>
             <h1>Make both sides equal.</h1>
-            <p class="makes-help">Tap each symbol to change it. The top side is calculated left-to-right.</p>
+            <p class="makes-help">The bottom operation is fixed. Change only the two top symbols to make both rows equal.</p>
 
             <div class="dice-equation" aria-label="Dice equation builder">
               <div class="equation-row">
-                <span class="paren">(</span>
+                <span id="makes-left-open" class="paren"></span>
                 <span id="makes-die-a" class="die">1</span>
                 <button class="operator-button" type="button" data-operator-slot="0" aria-label="Change first operator">+</button>
+                <span id="makes-middle-open" class="paren"></span>
                 <span id="makes-die-b" class="die">2</span>
-                <span class="paren">)</span>
+                <span id="makes-left-close" class="paren"></span>
                 <button class="operator-button" type="button" data-operator-slot="1" aria-label="Change second operator">+</button>
                 <span id="makes-die-c" class="die">3</span>
+                <span id="makes-right-close" class="paren"></span>
               </div>
               <span class="equals">=</span>
               <div class="equation-row">
                 <span id="makes-die-d" class="die">4</span>
-                <button class="operator-button" type="button" data-operator-slot="2" aria-label="Change third operator">+</button>
+                <span id="makes-bottom-operator" class="fixed-operator">+</span>
                 <span id="makes-die-e" class="die">5</span>
               </div>
             </div>
 
-            <p id="makes-values" class="makes-values" aria-live="polite"></p>
             <p id="makes-feedback" class="makes-feedback" aria-live="polite">Every puzzle has at least one solution.</p>
 
             <div class="makes-actions">
               <button id="makes-new" class="secondary-button" type="button">New Puzzle</button>
-              <button id="makes-hint" class="secondary-button" type="button">Show Hint</button>
               <button id="makes-check" class="primary-button" type="button">Check Equation</button>
             </div>
           </article>

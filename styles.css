@@ -297,7 +297,7 @@ textarea {
   line-height: 1;
   letter-spacing: -0.05em;
 }
-.makes-help, .makes-values { color: var(--muted); }
+.makes-help { color: var(--muted); }
 .dice-equation {
   display: flex;
   flex-direction: column;
@@ -338,8 +338,21 @@ textarea {
   font-weight: 950;
 }
 .operator-button:hover { background: #dfd6ff; }
-.paren, .equals { font-size: clamp(2rem, 6vw, 4rem); font-weight: 950; }
-.makes-values { min-height: 1.4rem; margin-bottom: 0.45rem; font-weight: 800; }
+.fixed-operator {
+  display: grid;
+  width: clamp(2.8rem, 7vw, 4rem);
+  aspect-ratio: 1;
+  place-items: center;
+  color: var(--ink);
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 950;
+}
+.paren {
+  min-width: 0.45em;
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 950;
+}
+.equals { font-size: clamp(2rem, 6vw, 4rem); font-weight: 950; }
 .makes-feedback { min-height: 1.5rem; margin-bottom: 1.2rem; font-weight: 900; }
 .makes-feedback.correct { color: var(--green); }
 .makes-feedback.wrong { color: var(--coral); }
